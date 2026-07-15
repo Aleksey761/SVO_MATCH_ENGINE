@@ -41,11 +41,30 @@ def test_normalizer_supports_configurable_rules():
         brand_rules=[("SVO", ["svo", "sv"]), ("GILAR", ["gilar"])],
         volume_rules=[("л", ["л", "liter"]), ("мл", ["ml"])],
         garbage_words=["parfume", "junk"],
+        aroma_aliases={"ЛАЙМ": ["lime", "лайм"]},
     )
-    item = ArrivalItem(row_number=1, source_name="SV GILAR SHAMPOO 500 ml JUNK")
+    item = ArrivalItem(row_number=1, source_name="SV GILAR SHAMPOO 500 ml JUNK LIME")
 
     result = normalizer.normalize(item)
 
     assert result.brand == "SVO"
-    assert result.volume == "500 мл"
-    assert result.variant is None
+    assert result.volume == "500 МЛ"
+    assert result.variant == "LIME"
+    assert result.aroma == "LIME"
+
+
+def test_normalizer_converts_large_volumes_to_liters_and_removes_garbage_words():
+    normalizer = Normalizer(
+        category_rules=[("Шампунь", ["шампунь"])],
+        brand_rules=[("SVO", ["svo"])],
+        aroma_aliases={"АКВА": ["aqua", "аква"]},
+    )
+    item = ArrivalItem(row_number=2, source_name="SVO Shampun 1000 ml PARFUME AQUA")
+
+    result = normalizer.normalize(item)
+
+    assert result.category == "Шампунь"
+    assert result.brand == "SVO"
+    assert result.volume == "1 Л"
+    assert result.variant == "AQUA"
+    assert result.aroma == "AQUA"
