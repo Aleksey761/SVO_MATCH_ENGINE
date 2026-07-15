@@ -69,18 +69,16 @@ class Normalizer:
         text = self._clean_text(item.source_name)
         upper = text.upper()
 
-        item.brand = self._detect_brand(text, upper)
+        item.brand, brand_match = self._detect_brand(text, upper)
         item.category = self._detect_category(text)
         item.volume = self._detect_volume(text)
 
         if item.brand:
-            parts = re.split(re.escape(item.brand), text, flags=re.IGNORECASE, maxsplit=1)
-            if len(parts) == 2:
-                candidate = self._cleanup_candidate(parts[1])
-                if candidate:
-                    normalized_aroma = self._normalize_aroma(candidate)
-                    item.variant = normalized_aroma.upper()
-                    item.aroma = normalized_aroma.upper()
+            candidate = self._cleanup_candidate(text, brand_match)
+            if candidate:
+                normalized_aroma = self._normalize_aroma(candidate)
+                item.variant = normalized_aroma.upper()
+                item.aroma = normalized_aroma.upper()
 
         return item
 
@@ -93,22 +91,27 @@ class Normalizer:
     def _clean_text(self, value: str) -> str:
         return " ".join(str(value).replace(",", " ").split())
 
-    def _detect_brand(self, text: str, upper_text: str) -> Optional[str]:
+    def _detect_brand(self, text: str, upper_text: str) -> tuple[Optional[str], Optional[str]]:
         lower_text = text.lower()
         for brand, patterns in self._brand_rules:
             for pattern in patterns:
                 if re.search(rf"\b{re.escape(pattern.lower())}\b", lower_text):
-                    return brand
+                    return brand, pattern
         for brand in (brand for brand, _ in self._brand_rules):
             if brand in upper_text:
-                return brand
-        return None
+                return brand, brand
+        return None, None
 
     def _detect_category(self, text: str) -> Optional[str]:
         lower = text.lower()
         for category, patterns in self._category_rules:
             if any(re.search(rf"\b{re.escape(pattern.lower())}\b", lower) for pattern in patterns):
                 return category
+        if re.search(r"\bshamp(?:oo|un)\b", lower):
+            for category, patterns in self._category_rules:
+                haystack = " ".join([category, *patterns]).upper()
+                if "\u0428\u0410\u041c\u041f\u0423\u041d" in haystack:
+                    return category
         return None
 
     def _detect_volume(self, text: str) -> Optional[str]:
@@ -131,8 +134,23 @@ class Normalizer:
             return f"{self._format_decimal(liters)} Л"
         return f"{self._format_decimal(value / Decimal('1000'))} Л" if value >= Decimal('1000') else f"{self._format_decimal(value)} МЛ"
 
-    def _cleanup_candidate(self, candidate: str) -> Optional[str]:
+    def _cleanup_candidate(self, candidate: str, brand_match: Optional[str] = None) -> Optional[str]:
         cleaned = self._volume_re.sub("", candidate)
+        removal_terms = []
+        if brand_match:
+            removal_terms.append(brand_match)
+        for _, patterns in self._brand_rules:
+            removal_terms.extend(patterns)
+        for _, patterns in self._category_rules:
+            removal_terms.extend(patterns)
+        removal_terms.extend(["shampoo", "shampun"])
+        for term in sorted(set(removal_terms), key=len, reverse=True):
+            cleaned = re.sub(
+                rf"\b{re.escape(term)}\b",
+                "",
+                cleaned,
+                flags=re.IGNORECASE,
+            )
         for garbage_word in self._garbage_words:
             cleaned = re.sub(
                 rf"\b{re.escape(garbage_word)}\b",
@@ -150,7 +168,7 @@ class Normalizer:
             mapped = None
             for canonical, aliases in self._aroma_aliases.items():
                 if lowered in {alias.lower() for alias in aliases}:
-                    mapped = canonical
+                    mapped = token
                     break
             normalized.append(mapped or token)
         return " ".join(normalized).strip()

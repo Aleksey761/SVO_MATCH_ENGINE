@@ -33,6 +33,8 @@ class MasterItem:
             normalized = self._normalize_value(value)
             if normalized:
                 values.append((field_name, normalized))
+                if field_name == "category" and "\u0428\u0410\u041c\u041f\u0423\u041d" in normalized:
+                    values.append((field_name, "SHAMPUN"))
         return values
 
     @staticmethod
