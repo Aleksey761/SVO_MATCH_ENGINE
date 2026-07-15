@@ -68,3 +68,69 @@ def test_normalizer_converts_large_volumes_to_liters_and_removes_garbage_words()
     assert result.volume == "1 Л"
     assert result.variant == "AQUA"
     assert result.aroma == "AQUA"
+
+
+def test_match_returns_multiple_candidates_when_confidence_is_close():
+    master_items = [
+        MasterItem(sku="SKU-20", category="Шампунь", brand="SVO", variant="AQUA", volume="1 л"),
+        MasterItem(sku="SKU-21", category="Шампунь", brand="SVO", variant="LIME", volume="1 л"),
+    ]
+    matcher = Matcher(master_items)
+
+    arrival = ArrivalItem(row_number=3, source_name="SVO SHAMPUN 1 л")
+    arrival.category = "Шампунь"
+    arrival.brand = "SVO"
+    arrival.volume = "1 л"
+
+    matched = matcher.match(arrival)
+
+    assert matched.status == "REVIEW"
+    assert matched.confidence == 85.0
+    assert "MULTIPLE_MATCH" in matched.review_reasons
+    assert len(matched.candidates) == 2
+    assert matched.review_explanation["reasons"] == ["MULTIPLE_MATCH", "LOW_SCORE"]
+
+
+def test_match_reports_missing_volume_and_unknown_brand():
+    master_items = [
+        MasterItem(sku="SKU-30", category="Шампунь", brand="SVO", variant="AQUA", volume="1 л"),
+    ]
+    matcher = Matcher(master_items)
+
+    arrival = ArrivalItem(row_number=4, source_name="UNKNOWN BRAND SHAMPUN AQUA")
+    arrival.category = "Шампунь"
+    arrival.brand = "UNKNOWN"
+    arrival.variant = "AQUA"
+
+    matched = matcher.match(arrival)
+
+    assert matched.status == "REVIEW"
+    assert "NO_VOLUME" in matched.review_reasons
+    assert "UNKNOWN_BRAND" in matched.review_reasons
+    assert "LOW_SCORE" in matched.review_reasons
+
+
+def test_matcher_v04_contract_preserves_public_api_and_result_shape():
+    master_items = [
+        MasterItem(sku="SKU-40", category="Шампунь", brand="SVO", variant="AQUA", volume="1 л"),
+    ]
+    matcher = Matcher(master_items)
+
+    arrival = ArrivalItem(row_number=5, source_name="SVO SHAMPUN AQUA")
+    arrival.category = "Шампунь"
+    arrival.brand = "SVO"
+    arrival.variant = "AQUA"
+    arrival.volume = "1 л"
+
+    matched = matcher.match(arrival)
+    batch_result = matcher.match_all([arrival])
+
+    assert isinstance(matched, ArrivalItem)
+    assert matched.status == "MATCH"
+    assert matched.sku == "SKU-40"
+    assert matched.confidence == 100.0
+    assert matched.review_reasons == []
+    assert matched.candidates == []
+    assert matched.review_explanation == {"confidence": 100.0, "reasons": [], "candidates": []}
+    assert len(batch_result) == 1
+    assert isinstance(batch_result[0], ArrivalItem)

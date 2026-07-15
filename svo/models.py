@@ -1,5 +1,5 @@
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -63,6 +63,10 @@ class ArrivalItem:
     master_name: Optional[str] = None
 
     status: str = "NEW"
+    confidence: float = 0.0
+    review_reasons: list[str] = field(default_factory=list)
+    candidates: list["MasterItem"] = field(default_factory=list)
+    review_explanation: dict = field(default_factory=dict)
 
     @property
     def normalized_key(self) -> str:
