@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Project temporary files
+pytest_capture.txt
+pytest_verbose.txt
+
+# Jupyter
+.ipynb_checkpoints/
+verify_matcher.ipynb
+
+# AI workspace
+.agents/
