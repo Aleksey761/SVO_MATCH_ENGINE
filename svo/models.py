@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -9,6 +10,7 @@ class MasterItem:
     brand: str
     variant: str
     volume: str
+    aroma: Optional[str] = None
 
     @property
     def normalized_key(self) -> str:
@@ -18,6 +20,32 @@ class MasterItem:
             f"{self.variant.strip().upper()}|"
             f"{self.volume.strip().upper()}"
         )
+
+    def index_values(self) -> list[tuple[str, str]]:
+        values = []
+        for field_name, value in (
+            ("sku", self.sku),
+            ("category", self.category),
+            ("brand", self.brand),
+            ("volume", self.volume),
+            ("aroma", self.aroma or self.variant),
+        ):
+            normalized = self._normalize_value(value)
+            if normalized:
+                values.append((field_name, normalized))
+                if field_name == "category" and "\u0428\u0410\u041c\u041f\u0423\u041d" in normalized:
+                    values.append((field_name, "SHAMPUN"))
+        return values
+
+    @staticmethod
+    def _normalize_value(value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        text = str(value).strip()
+        if not text:
+            return None
+        text = re.sub(r"\s+", " ", text).upper()
+        return text
 
 
 @dataclass
@@ -29,11 +57,16 @@ class ArrivalItem:
     brand: Optional[str] = None
     variant: Optional[str] = None
     volume: Optional[str] = None
+    aroma: Optional[str] = None
 
     sku: Optional[str] = None
     master_name: Optional[str] = None
 
     status: str = "NEW"
+    confidence: float = 0.0
+    review_reasons: list[str] = field(default_factory=list)
+    candidates: list["MasterItem"] = field(default_factory=list)
+    review_explanation: dict = field(default_factory=dict)
 
     @property
     def normalized_key(self) -> str:
