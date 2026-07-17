@@ -146,14 +146,14 @@ class Normalizer:
         removal_terms.extend(["shampoo", "shampun"])
         for term in sorted(set(removal_terms), key=len, reverse=True):
             cleaned = re.sub(
-                rf"\b{re.escape(term)}\b",
+                rf"\b{re.escape(term)}\w*",
                 "",
                 cleaned,
                 flags=re.IGNORECASE,
             )
         for garbage_word in self._garbage_words:
             cleaned = re.sub(
-                rf"\b{re.escape(garbage_word)}\b",
+                rf"\b{re.escape(garbage_word)}\w*",
                 "",
                 cleaned,
                 flags=re.IGNORECASE,
