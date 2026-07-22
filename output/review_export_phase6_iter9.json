@@ -1,0 +1,96 @@
+{
+  "metrics": {
+    "MATCH": 264,
+    "REVIEW": 2,
+    "LOW_SCORE": 2,
+    "MULTIPLE_MATCH": 2,
+    "NO_VOLUME": 2,
+    "UNKNOWN_BRAND": 0
+  },
+  "review_rows": [
+    {
+      "row_number": 20,
+      "source_text": "Кондиционер для стирки, SVO парфюмированный Таинственный лотос LOTOS",
+      "normalized": {
+        "category": "Кондиционер",
+        "brand": "SVO",
+        "volume": null,
+        "aroma": "TAINSTVENN LOTO"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE",
+        "NO_VOLUME"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-035",
+          "variant": "Lotos",
+          "score": 64.25
+        },
+        {
+          "sku": "SKU-064",
+          "variant": "Lotos",
+          "score": 64.25
+        },
+        {
+          "sku": "SKU-073",
+          "variant": "Love Is",
+          "score": 59.57
+        },
+        {
+          "sku": "SKU-072",
+          "variant": "Maiden Tower",
+          "score": 51.7
+        },
+        {
+          "sku": "SKU-045",
+          "variant": "Shaik",
+          "score": 49.8
+        }
+      ]
+    },
+    {
+      "row_number": 175,
+      "source_text": "Подгузники одноразовые (размеры 1-2-3-4-5-6) BOSSFIX",
+      "normalized": {
+        "category": "Подгузники",
+        "brand": "BOSSFIX",
+        "volume": null,
+        "aroma": "PODGUZNIK ODNORAZOV RAZMER"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE",
+        "NO_VOLUME"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-283",
+          "variant": "Size 1",
+          "score": 45.0
+        },
+        {
+          "sku": "SKU-284",
+          "variant": "Size 2",
+          "score": 45.0
+        },
+        {
+          "sku": "SKU-285",
+          "variant": "Size 3",
+          "score": 45.0
+        },
+        {
+          "sku": "SKU-286",
+          "variant": "Size 4",
+          "score": 45.0
+        },
+        {
+          "sku": "SKU-287",
+          "variant": "Size 5",
+          "score": 45.0
+        }
+      ]
+    }
+  ]
+}
