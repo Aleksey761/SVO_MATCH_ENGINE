@@ -61,12 +61,14 @@ python "%SCRIPT_DIR%match.py"
 if errorlevel 1 (
     echo.
     echo RESULT: FAILED
+    echo ERROR: Arrival pipeline execution failed.
     set "EXIT_CODE=20"
     goto :end
 )
 
 echo.
 echo RESULT: SUCCESS
+echo INFO: Arrival matching completed. Check output folder for ARRIVAL_MATCH_*.xlsx.
 set "EXIT_CODE=0"
 
 :end

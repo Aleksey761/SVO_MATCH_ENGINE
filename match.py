@@ -15,6 +15,7 @@ def main():
     print(f"REVIEW : {result['review']}")
     print(f"DATE   : {result['arrival_date']}")
     print("RESULT :", result['output'])
+    print("ARRIVAL MATCH FILE:", result['matched_arrival_output'])
 
 
 if __name__ == '__main__':

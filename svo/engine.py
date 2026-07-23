@@ -29,6 +29,8 @@ class Engine:
         if output_file is None:
             output_name = f"RESULT_{arrival_date}.xlsx" if arrival_date else "RESULT.xlsx"
             output_file = Path("output") / output_name
+        arrival_output_date = arrival_date if arrival_date is not None else "None"
+        matched_arrival_output = Path("output") / f"ARRIVAL_MATCH_{arrival_output_date}.xlsx"
 
         master = self.loader.load_master(master_file)
         arrival = self.loader.load_arrival(arrival_file)
@@ -39,7 +41,9 @@ class Engine:
         matcher = Matcher(master)
         matcher.match_all(arrival)
 
-        Reporter().write(arrival, output_file, arrival_date=arrival_date)
+        reporter = Reporter()
+        reporter.write(arrival, output_file, arrival_date=arrival_date)
+        reporter.write_matched_arrival(arrival_file, arrival, matched_arrival_output)
 
         match_count = sum(1 for i in arrival if i.status == "MATCH")
         review_count = sum(1 for i in arrival if i.status == "REVIEW")
@@ -50,6 +54,7 @@ class Engine:
             "match": match_count,
             "review": review_count,
             "output": str(output_file),
+            "matched_arrival_output": str(matched_arrival_output),
             "arrival_date": arrival_date,
             "master_file": str(Path(master_file)),
             "arrival_file": str(Path(arrival_file)),
