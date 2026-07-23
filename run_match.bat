@@ -45,6 +45,23 @@ if not "!ARRIVAL_COUNT!"=="1" (
     goto :end
 )
 
+set "SALES_COUNT=0"
+for /f "usebackq delims=" %%F in (`dir /b /a-d "%INPUT_DIR%\*.xlsx" 2^>nul ^| findstr /i "sales"`) do (
+    set /a SALES_COUNT+=1
+)
+
+if "!SALES_COUNT!"=="0" (
+    echo ERROR: SALES workbook is missing in %INPUT_DIR%.
+    set "EXIT_CODE=15"
+    goto :end
+)
+
+if not "!SALES_COUNT!"=="1" (
+    echo ERROR: Multiple SALES workbooks found in %INPUT_DIR%: !SALES_COUNT!.
+    set "EXIT_CODE=16"
+    goto :end
+)
+
 if not exist "%OUTPUT_DIR%" (
     mkdir "%OUTPUT_DIR%"
 )

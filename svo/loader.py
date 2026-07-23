@@ -36,26 +36,37 @@ class Loader:
 
         return None
 
-    def discover_workbooks(self, input_dir: str | Path) -> tuple[Path, Path, str | None]:
+    def discover_workbooks(
+        self,
+        input_dir: str | Path,
+        require_sales: bool = False,
+    ) -> tuple[Path, Path, Path | None, str | None, str | None]:
         root = Path(input_dir)
         workbooks = [p for p in root.glob("*.xlsx") if p.is_file()]
 
         master_candidates = [p for p in workbooks if "master" in p.stem.lower()]
         arrival_candidates = [p for p in workbooks if "arrival" in p.stem.lower()]
+        sales_candidates = [p for p in workbooks if "sales" in p.stem.lower()]
 
         if len(master_candidates) != 1:
             raise ValueError(f"Expected exactly one MASTER workbook in {root}, found {len(master_candidates)}")
         if len(arrival_candidates) != 1:
             raise ValueError(f"Expected exactly one ARRIVAL workbook in {root}, found {len(arrival_candidates)}")
+        if len(sales_candidates) > 1:
+            raise ValueError(f"Multiple SALES workbooks found in {root}: {len(sales_candidates)}")
+        if require_sales and len(sales_candidates) == 0:
+            raise ValueError(f"SALES workbook is missing in {root}")
 
         master_file = master_candidates[0]
         arrival_file = arrival_candidates[0]
+        sales_file = sales_candidates[0] if sales_candidates else None
         arrival_date = self.parse_arrival_date_from_filename(arrival_file.name)
+        sales_date = self.parse_arrival_date_from_filename(sales_file.name) if sales_file else None
         if arrival_date is None:
             print("WARNING:")
             print("Arrival date not found in filename.")
 
-        return master_file, arrival_file, arrival_date
+        return master_file, arrival_file, sales_file, arrival_date, sales_date
 
     def load_master(self, filename: str | Path) -> List[MasterItem]:
         wb = load_workbook(filename=filename, data_only=True)

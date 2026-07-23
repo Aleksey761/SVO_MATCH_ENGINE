@@ -22,9 +22,14 @@ class Engine:
     ):
 
         arrival_date = None
+        sales_file = None
+        sales_date = None
         if master_file is None or arrival_file is None:
             resolved_input = Path(input_dir) if input_dir is not None else Path("data")
-            master_file, arrival_file, arrival_date = self.loader.discover_workbooks(resolved_input)
+            master_file, arrival_file, sales_file, arrival_date, sales_date = self.loader.discover_workbooks(
+                resolved_input,
+                require_sales=True,
+            )
 
         if output_file is None:
             output_name = f"RESULT_{arrival_date}.xlsx" if arrival_date else "RESULT.xlsx"
@@ -56,6 +61,8 @@ class Engine:
             "output": str(output_file),
             "matched_arrival_output": str(matched_arrival_output),
             "arrival_date": arrival_date,
+            "sales_date": sales_date,
             "master_file": str(Path(master_file)),
             "arrival_file": str(Path(arrival_file)),
+            "sales_file": str(Path(sales_file)) if sales_file is not None else None,
         }

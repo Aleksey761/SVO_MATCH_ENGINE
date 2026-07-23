@@ -9,7 +9,10 @@ from svo.matcher import Matcher
 def main():
     loader = Loader()
 
-    master_file, arrival_file, arrival_date = loader.discover_workbooks(Path("data"))
+    master_file, arrival_file, sales_file, arrival_date, sales_date = loader.discover_workbooks(
+        Path("data"),
+        require_sales=False,
+    )
 
     master = loader.load_master(master_file)
     arrival = loader.load_arrival(arrival_file)
@@ -26,8 +29,11 @@ def main():
     reason_counter = Counter()
 
     print("=" * 70)
+    print(f"MASTER FILE : {master_file.name}")
     print(f"ARRIVAL FILE: {arrival_file.name}")
+    print(f"SALES FILE  : {sales_file.name if sales_file else None}")
     print(f"ARRIVAL DATE: {arrival_date}")
+    print(f"SALES DATE  : {sales_date}")
     print(f"MASTER : {len(master)}")
     print(f"ARRIVAL: {len(arrival)}")
     print("=" * 70)
