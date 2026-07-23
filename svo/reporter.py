@@ -7,10 +7,20 @@ from .models import ArrivalItem
 class Reporter:
     """Writes matching results to RESULT.xlsx."""
 
-    def write(self, items: list[ArrivalItem], output_file: str | Path) -> None:
+    def write(
+        self,
+        items: list[ArrivalItem],
+        output_file: str | Path,
+        arrival_date: str | None = None,
+    ) -> None:
         wb = Workbook()
         ws = wb.active
         ws.title = "RESULT"
+
+        ws.append(["REPORT", "SVO Match Engine"])
+        ws.append(["ARRIVAL_DATE", arrival_date if arrival_date is not None else ""])
+        ws.append(["METADATA", f"arrival_date={arrival_date}"])
+        ws.append([])
 
         ws.append([
             "SOURCE_NAME",

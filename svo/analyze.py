@@ -9,8 +9,10 @@ from svo.matcher import Matcher
 def main():
     loader = Loader()
 
-    master = loader.load_master(Path("data/MASTER.xlsx"))
-    arrival = loader.load_arrival(Path("data/ARRIVAL.xlsx"))
+    master_file, arrival_file, arrival_date = loader.discover_workbooks(Path("data"))
+
+    master = loader.load_master(master_file)
+    arrival = loader.load_arrival(arrival_file)
 
     normalizer = Normalizer()
 
@@ -24,6 +26,8 @@ def main():
     reason_counter = Counter()
 
     print("=" * 70)
+    print(f"ARRIVAL FILE: {arrival_file.name}")
+    print(f"ARRIVAL DATE: {arrival_date}")
     print(f"MASTER : {len(master)}")
     print(f"ARRIVAL: {len(arrival)}")
     print("=" * 70)
