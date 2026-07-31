@@ -1,0 +1,859 @@
+{
+  "metrics": {
+    "MATCH": 250,
+    "REVIEW": 16,
+    "LOW_SCORE": 13,
+    "MULTIPLE_MATCH": 15,
+    "NO_VOLUME": 2,
+    "UNKNOWN_BRAND": 1
+  },
+  "review_rows": [
+    {
+      "row_number": 12,
+      "source_text": "Кондиционер для стирки SVO парфюмированны(синий) 2,7 л горный бриз",
+      "normalized": {
+        "category": "Кондиционер",
+        "brand": "SVO",
+        "volume": "2,7 Л",
+        "aroma": "GORN BRIZ"
+      },
+      "rejection_reasons": [
+        "LOW_SCORE"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-055",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Peony",
+          "volume": "2,7 л",
+          "score": 96.5
+        },
+        {
+          "sku": "SKU-056",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Mountain Breeze",
+          "volume": "2,7 л",
+          "score": 93.51
+        },
+        {
+          "sku": "SKU-062",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Midnight",
+          "volume": "2,7 л",
+          "score": 89.0
+        },
+        {
+          "sku": "SKU-063",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Dahlia",
+          "volume": "2,7 л",
+          "score": 89.0
+        },
+        {
+          "sku": "SKU-057",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Black",
+          "volume": "2,7 л",
+          "score": 85.0
+        }
+      ]
+    },
+    {
+      "row_number": 13,
+      "source_text": "Кондиционер для стирки SVO парфюмированный(черный) 2,7 л аромат цветов",
+      "normalized": {
+        "category": "Кондиционер",
+        "brand": "SVO",
+        "volume": "2,7 Л",
+        "aroma": "FLOWERS"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-065",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Floral Mist",
+          "volume": "2,7 л",
+          "score": 90.62
+        },
+        {
+          "sku": "SKU-063",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Dahlia",
+          "volume": "2,7 л",
+          "score": 89.0
+        },
+        {
+          "sku": "SKU-055",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Peony",
+          "volume": "2,7 л",
+          "score": 85.0
+        },
+        {
+          "sku": "SKU-056",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Mountain Breeze",
+          "volume": "2,7 л",
+          "score": 85.0
+        },
+        {
+          "sku": "SKU-057",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Black",
+          "volume": "2,7 л",
+          "score": 85.0
+        }
+      ]
+    },
+    {
+      "row_number": 20,
+      "source_text": "Кондиционер для стирки, SVO парфюмированный Таинственный лотос LOTOS",
+      "normalized": {
+        "category": "Кондиционер",
+        "brand": "SVO",
+        "volume": null,
+        "aroma": "TAINSTVENN LOTO"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE",
+        "NO_VOLUME"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-035",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Lotos",
+          "volume": "1,44 л",
+          "score": 64.25
+        },
+        {
+          "sku": "SKU-064",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Lotos",
+          "volume": "2,7 л",
+          "score": 64.25
+        },
+        {
+          "sku": "SKU-073",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Love Is",
+          "volume": "5 л",
+          "score": 59.57
+        },
+        {
+          "sku": "SKU-072",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Maiden Tower",
+          "volume": "5 л",
+          "score": 51.7
+        },
+        {
+          "sku": "SKU-045",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Shaik",
+          "volume": "1,44 л",
+          "score": 49.8
+        }
+      ]
+    },
+    {
+      "row_number": 23,
+      "source_text": "Кондиционер для стирки + гель,SVO парфюмированный, для темного белья 2,7 л",
+      "normalized": {
+        "category": "Кондиционер",
+        "brand": "SVO",
+        "volume": "2,7 Л",
+        "aroma": "TEMN"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-055",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Peony",
+          "volume": "2,7 л",
+          "score": 96.5
+        },
+        {
+          "sku": "SKU-066",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Mango",
+          "volume": "2,7 л",
+          "score": 96.5
+        },
+        {
+          "sku": "SKU-057",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Black",
+          "volume": "2,7 л",
+          "score": 89.0
+        },
+        {
+          "sku": "SKU-063",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Dahlia",
+          "volume": "2,7 л",
+          "score": 89.0
+        },
+        {
+          "sku": "SKU-067",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Black Gel",
+          "volume": "2,7 л",
+          "score": 89.0
+        }
+      ]
+    },
+    {
+      "row_number": 73,
+      "source_text": "Крем-мыло `Pearlis Морские минералы, 4 шт. *100гр. Блистер",
+      "normalized": {
+        "category": "Крем-мыло",
+        "brand": "PEARLIS",
+        "volume": "4×100 Г",
+        "aroma": "MORSK MINERAL BLISTER"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-137",
+          "category": "Сухое мыло",
+          "brand": "Pearlis",
+          "variant": "Sea Minerals",
+          "volume": "4×100 г",
+          "score": 71.78
+        },
+        {
+          "sku": "SKU-138",
+          "category": "Сухое мыло",
+          "brand": "Pearlis",
+          "variant": "Rose",
+          "volume": "4×100 г",
+          "score": 71.5
+        },
+        {
+          "sku": "SKU-136",
+          "category": "Сухое мыло",
+          "brand": "Pearlis",
+          "variant": "Bouquet",
+          "volume": "4×100 г",
+          "score": 60.0
+        },
+        {
+          "sku": "SKU-119",
+          "category": "Крем-мыло",
+          "brand": "GILAR",
+          "variant": "Oatmeal",
+          "volume": "500 мл",
+          "score": 38.14
+        },
+        {
+          "sku": "SKU-120",
+          "category": "Крем-мыло",
+          "brand": "GILAR",
+          "variant": "Oriental",
+          "volume": "500 мл",
+          "score": 37.27
+        }
+      ]
+    },
+    {
+      "row_number": 78,
+      "source_text": "Жидкое мыло SVO с оливковым ароматом 500 мл",
+      "normalized": {
+        "category": "Жидкое мыло",
+        "brand": "SVO",
+        "volume": "500 МЛ",
+        "aroma": "OLIVKOVYM"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-110",
+          "category": "Жидкое мыло",
+          "brand": "SVO",
+          "variant": "Lavanda",
+          "volume": "500 мл",
+          "score": 85.0
+        },
+        {
+          "sku": "SKU-111",
+          "category": "Жидкое мыло",
+          "brand": "SVO",
+          "variant": "Ocean",
+          "volume": "500 мл",
+          "score": 85.0
+        },
+        {
+          "sku": "SKU-112",
+          "category": "Жидкое мыло",
+          "brand": "SVO",
+          "variant": "Rose",
+          "volume": "500 мл",
+          "score": 85.0
+        },
+        {
+          "sku": "SKU-113",
+          "category": "Жидкое мыло",
+          "brand": "SVO",
+          "variant": "Olive",
+          "volume": "500 мл",
+          "score": 85.0
+        },
+        {
+          "sku": "SKU-114",
+          "category": "Жидкое мыло",
+          "brand": "SVO",
+          "variant": "Passion Fruit",
+          "volume": "500 мл",
+          "score": 85.0
+        }
+      ]
+    },
+    {
+      "row_number": 98,
+      "source_text": "Стиральный порошок автомат BOSSFIX   для детского белья 400 г",
+      "normalized": {
+        "category": "Порошок стиральный",
+        "brand": "BOSSFIX",
+        "volume": "400 Г",
+        "aroma": "DETSK"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE",
+        "UNKNOWN_BRAND"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-149",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Rose",
+          "volume": "400 г",
+          "score": 69.36
+        },
+        {
+          "sku": "SKU-156",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Black",
+          "volume": "400 г",
+          "score": 69.0
+        },
+        {
+          "sku": "SKU-152",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Mountain Breeze",
+          "volume": "400 г",
+          "score": 67.0
+        },
+        {
+          "sku": "SKU-159",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Spring Fresh",
+          "volume": "400 г",
+          "score": 66.85
+        },
+        {
+          "sku": "SKU-150",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Lemon",
+          "volume": "400 г",
+          "score": 65.0
+        }
+      ]
+    },
+    {
+      "row_number": 110,
+      "source_text": "Стиральный порошок для цветного белья, SVO автомат.BABY 1,3 кг",
+      "normalized": {
+        "category": "Порошок стиральный",
+        "brand": "SVO",
+        "volume": "1,3 КГ",
+        "aroma": "COLOR AVTOMATBAB"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-168",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Color",
+          "volume": "1,3 кг",
+          "score": 100.0
+        },
+        {
+          "sku": "SKU-291",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Baby",
+          "volume": "1,3 кг",
+          "score": 99.92
+        },
+        {
+          "sku": "SKU-160",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Rose",
+          "volume": "1,3 кг",
+          "score": 89.36
+        },
+        {
+          "sku": "SKU-167",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Black",
+          "volume": "1,3 кг",
+          "score": 89.0
+        },
+        {
+          "sku": "SKU-162",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Lavender",
+          "volume": "1,3 кг",
+          "score": 88.69
+        }
+      ]
+    },
+    {
+      "row_number": 145,
+      "source_text": "Стиральный порошок для цветного белья,SVO  автомат. Маракуйя 4 кг",
+      "normalized": {
+        "category": "Порошок стиральный",
+        "brand": "SVO",
+        "volume": "4 КГ",
+        "aroma": "COLOR PASSION FRUIT"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-210",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Passion Fruit",
+          "volume": "4 кг",
+          "score": 100.0
+        },
+        {
+          "sku": "SKU-212",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Color",
+          "volume": "4 кг",
+          "score": 100.0
+        },
+        {
+          "sku": "SKU-204",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Rose",
+          "volume": "4 кг",
+          "score": 89.36
+        },
+        {
+          "sku": "SKU-211",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Black",
+          "volume": "4 кг",
+          "score": 89.0
+        },
+        {
+          "sku": "SKU-206",
+          "category": "Порошок стиральный",
+          "brand": "SVO",
+          "variant": "Lavender",
+          "volume": "4 кг",
+          "score": 88.69
+        }
+      ]
+    },
+    {
+      "row_number": 175,
+      "source_text": "Подгузники одноразовые (размеры 1-2-3-4-5-6) BOSSFIX",
+      "normalized": {
+        "category": null,
+        "brand": "BOSSFIX",
+        "volume": null,
+        "aroma": "PODGUZNIK ODNORAZOV RAZMER"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE",
+        "NO_VOLUME"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-082",
+          "category": "ЖМС",
+          "brand": "BOSSFIX",
+          "variant": "Baby",
+          "volume": "1 л",
+          "score": 20.0
+        },
+        {
+          "sku": "SKU-092",
+          "category": "ЖМС",
+          "brand": "BOSSFIX",
+          "variant": "Baby",
+          "volume": "1,5 л",
+          "score": 20.0
+        },
+        {
+          "sku": "SKU-103",
+          "category": "ЖМС",
+          "brand": "BOSSFIX",
+          "variant": "Baby",
+          "volume": "3 л",
+          "score": 20.0
+        },
+        {
+          "sku": "SKU-145",
+          "category": "Салфетки влажные",
+          "brand": "BOSSFIX",
+          "variant": "Baby",
+          "volume": "90 шт",
+          "score": 20.0
+        },
+        {
+          "sku": "SKU-283",
+          "category": "Подгузники",
+          "brand": "BOSSFIX",
+          "variant": "Size 1",
+          "volume": "1 уп",
+          "score": 20.0
+        }
+      ]
+    },
+    {
+      "row_number": 176,
+      "source_text": "Влажные детские салфетки (90 шт)  BOSSFIX",
+      "normalized": {
+        "category": null,
+        "brand": "BOSSFIX",
+        "volume": "90 УП",
+        "aroma": "VLAZHN DETSK SALFETK"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-082",
+          "category": "ЖМС",
+          "brand": "BOSSFIX",
+          "variant": "Baby",
+          "volume": "1 л",
+          "score": 20.0
+        },
+        {
+          "sku": "SKU-092",
+          "category": "ЖМС",
+          "brand": "BOSSFIX",
+          "variant": "Baby",
+          "volume": "1,5 л",
+          "score": 20.0
+        },
+        {
+          "sku": "SKU-103",
+          "category": "ЖМС",
+          "brand": "BOSSFIX",
+          "variant": "Baby",
+          "volume": "3 л",
+          "score": 20.0
+        },
+        {
+          "sku": "SKU-145",
+          "category": "Салфетки влажные",
+          "brand": "BOSSFIX",
+          "variant": "Baby",
+          "volume": "90 шт",
+          "score": 20.0
+        },
+        {
+          "sku": "SKU-283",
+          "category": "Подгузники",
+          "brand": "BOSSFIX",
+          "variant": "Size 1",
+          "volume": "1 уп",
+          "score": 20.0
+        }
+      ]
+    },
+    {
+      "row_number": 191,
+      "source_text": "Кондиционер для стирки, SVO парфюмированный ,Romantik Rose,романтичная роза 1,44",
+      "normalized": {
+        "category": "Кондиционер",
+        "brand": "SVO",
+        "volume": "1,44 Л",
+        "aroma": "ROMANTIK ROSE ROMANTICHN"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-047",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Romantik Rose",
+          "volume": "1,44 л",
+          "score": 108.0
+        },
+        {
+          "sku": "SKU-049",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Rose",
+          "volume": "1,44 л",
+          "score": 108.0
+        },
+        {
+          "sku": "SKU-045",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Shaik",
+          "volume": "1,44 л",
+          "score": 96.72
+        },
+        {
+          "sku": "SKU-036",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Mango",
+          "volume": "1,44 л",
+          "score": 96.5
+        },
+        {
+          "sku": "SKU-033",
+          "category": "Кондиционер",
+          "brand": "SVO",
+          "variant": "Magina",
+          "volume": "1,44 л",
+          "score": 95.62
+        }
+      ]
+    },
+    {
+      "row_number": 207,
+      "source_text": "Жидкое моющее средство SVO Elegant, Bossfix  1,5 л",
+      "normalized": {
+        "category": "ЖМС",
+        "brand": "SVO ELEGANT",
+        "volume": "1,5 Л",
+        "aroma": ""
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-089",
+          "category": "ЖМС",
+          "brand": "SVO Elegant",
+          "variant": "Velvet",
+          "volume": "1,5 л",
+          "score": 89.92
+        },
+        {
+          "sku": "SKU-088",
+          "category": "ЖМС",
+          "brand": "SVO Elegant",
+          "variant": "Sweet Tropic",
+          "volume": "1,5 л",
+          "score": 87.0
+        },
+        {
+          "sku": "SKU-083",
+          "category": "ЖМС",
+          "brand": "SVO Elegant",
+          "variant": "White",
+          "volume": "1,5 л",
+          "score": 85.0
+        },
+        {
+          "sku": "SKU-084",
+          "category": "ЖМС",
+          "brand": "SVO Elegant",
+          "variant": "Mango",
+          "volume": "1,5 л",
+          "score": 85.0
+        },
+        {
+          "sku": "SKU-085",
+          "category": "ЖМС",
+          "brand": "SVO Elegant",
+          "variant": "Floral Mist",
+          "volume": "1,5 л",
+          "score": 85.0
+        }
+      ]
+    },
+    {
+      "row_number": 245,
+      "source_text": "Жидкое мыло натуральное GILAR с маслом  500 мл",
+      "normalized": {
+        "category": "Натуральное мыло",
+        "brand": "GILAR",
+        "volume": "500 МЛ",
+        "aroma": ""
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-126",
+          "category": "Натуральное мыло",
+          "brand": "GILAR",
+          "variant": "Ginger",
+          "volume": "500 мл",
+          "score": 89.36
+        },
+        {
+          "sku": "SKU-129",
+          "category": "Натуральное мыло",
+          "brand": "GILAR",
+          "variant": "Cotton Milk",
+          "volume": "500 мл",
+          "score": 87.29
+        },
+        {
+          "sku": "SKU-130",
+          "category": "Натуральное мыло",
+          "brand": "GILAR",
+          "variant": "Cactus Flower",
+          "volume": "500 мл",
+          "score": 86.85
+        },
+        {
+          "sku": "SKU-123",
+          "category": "Натуральное мыло",
+          "brand": "GILAR",
+          "variant": "Aloe Vera",
+          "volume": "500 мл",
+          "score": 85.0
+        },
+        {
+          "sku": "SKU-124",
+          "category": "Натуральное мыло",
+          "brand": "GILAR",
+          "variant": "Ginseng",
+          "volume": "500 мл",
+          "score": 85.0
+        }
+      ]
+    },
+    {
+      "row_number": 267,
+      "source_text": "Средство от известкового налета Domix 1 л",
+      "normalized": {
+        "category": null,
+        "brand": "DOMIX",
+        "volume": "1 Л",
+        "aroma": "IZVESTK NALET"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-289",
+          "category": "Антинакипь",
+          "brand": "DOMIX",
+          "variant": "",
+          "volume": "1 л",
+          "score": 60.0
+        },
+        {
+          "sku": "SKU-290",
+          "category": "Антижир",
+          "brand": "DOMIX",
+          "variant": "",
+          "volume": "1 л",
+          "score": 60.0
+        }
+      ]
+    },
+    {
+      "row_number": 268,
+      "source_text": "Средство от жирных пятен Domix 1 л",
+      "normalized": {
+        "category": null,
+        "brand": "DOMIX",
+        "volume": "1 Л",
+        "aroma": "ZHIRN PYATEN"
+      },
+      "rejection_reasons": [
+        "MULTIPLE_MATCH",
+        "LOW_SCORE"
+      ],
+      "top5_candidates": [
+        {
+          "sku": "SKU-289",
+          "category": "Антинакипь",
+          "brand": "DOMIX",
+          "variant": "",
+          "volume": "1 л",
+          "score": 60.0
+        },
+        {
+          "sku": "SKU-290",
+          "category": "Антижир",
+          "brand": "DOMIX",
+          "variant": "",
+          "volume": "1 л",
+          "score": 60.0
+        }
+      ]
+    }
+  ]
+}
