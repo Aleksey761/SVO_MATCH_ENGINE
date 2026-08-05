@@ -1,0 +1,1 @@
+f:\SVO\AI\SVO_MATCH_ENGINE\.venv\Scripts\python.exe: can't open file 'f:\\SVO\\AI\\SVO_MATCH_ENGINE\\_tmp_inspect_result.py': [Errno 2] No such file or directory

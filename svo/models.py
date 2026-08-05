@@ -3,6 +3,23 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
+def _canonical_text(value: Optional[str]) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text:
+        return ""
+    return re.sub(r"\s+", " ", text).upper()
+
+
+def effective_product_type(item: object) -> Optional[str]:
+    product_type = getattr(item, "product_type", None)
+    category = getattr(item, "category", None)
+    effective = product_type if product_type else category
+    canonical = _canonical_text(effective)
+    return canonical or None
+
+
 @dataclass
 class MasterItem:
     sku: str
@@ -10,11 +27,18 @@ class MasterItem:
     brand: str
     variant: str
     volume: str
+    master_name: Optional[str] = None
     aroma: Optional[str] = None
+
+    @staticmethod
+    def _canonical_product_type(value: Optional[str]) -> str:
+        return _canonical_text(value)
 
     @property
     def normalized_key(self) -> str:
+        product_type = effective_product_type(self) or ""
         return (
+            f"{self._canonical_product_type(product_type)}|"
             f"{self.category.strip().upper()}|"
             f"{self.brand.strip().upper()}|"
             f"{self.variant.strip().upper()}|"
@@ -53,6 +77,7 @@ class ArrivalItem:
     row_number: int
     source_name: str
 
+    product_type: Optional[str] = None
     category: Optional[str] = None
     brand: Optional[str] = None
     variant: Optional[str] = None
@@ -70,7 +95,9 @@ class ArrivalItem:
 
     @property
     def normalized_key(self) -> str:
+        product_type = effective_product_type(self) or ""
         return (
+            f"{product_type}|"
             f"{(self.category or '').strip().upper()}|"
             f"{(self.brand or '').strip().upper()}|"
             f"{(self.variant or '').strip().upper()}|"

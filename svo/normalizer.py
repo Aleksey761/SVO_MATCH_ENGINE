@@ -9,6 +9,16 @@ from .dictionary import Dictionary
 class Normalizer:
     """Normalizes arrival item text and extracts basic fields."""
 
+    _DEFAULT_PRODUCT_TYPE_RULES = [
+        ("Гель для стирки", ["гель для стирки", "моющее средство для белья", "средство для стирки"]),
+        ("Кондиционер", ["кондиционер"]),
+        ("Порошок", ["порошок", "порошок стиральный"]),
+        ("Гель для душа", ["гель для душа"]),
+        ("Шампунь", ["шампун", "shampoo"]),
+        ("Мыло", ["мыло", "soap"]),
+        ("ЖМС", ["жмс", "жидкое средство"]),
+    ]
+
     _DEFAULT_CATEGORY_RULES = [
         ("Кондиционер", ["кондиционер"]),
         ("ЖМС", ["жмс", "жидкое средство"]),
@@ -140,6 +150,11 @@ class Normalizer:
                 self._rules_from_mapping(dictionary.categories),
             )
 
+        self._product_type_rules = self._merge_rules(
+            self._DEFAULT_PRODUCT_TYPE_RULES,
+            self._rules_from_mapping(dictionary.categories),
+        )
+
         if brand_rules is not None:
             self._brand_rules = self._coerce_rules(brand_rules)
         else:
@@ -192,12 +207,28 @@ class Normalizer:
         text = self._clean_text(item.source_name)
         upper = text.upper()
 
+        item.product_type = self._detect_product_type(text)
         item.brand, brand_match = self._detect_brand(text, upper)
         item.category = self._detect_category(text)
         item.volume = self._detect_volume(text)
 
+        if item.brand is None and item.category in {
+            "Кондиционер",
+            "ЖМС",
+            "Гель для душа",
+            "Шампунь",
+            "Шампунь men",
+            "Шампунь women",
+            "Шампунь sport",
+            "Шампунь органический",
+            "Жидкое мыло",
+            "Крем-мыло",
+            "Мыло",
+        }:
+            item.brand = "SVO"
+
         if item.brand:
-            candidate = self._cleanup_candidate(text, brand_match)
+            candidate = self._cleanup_candidate(text, brand_match, item.product_type)
             if candidate:
                 normalized_aroma = self._normalize_aroma(candidate)
                 normalized_aroma = self._refine_aroma_for_category(
@@ -210,6 +241,14 @@ class Normalizer:
                 item.aroma = normalized_aroma.upper()
 
         return item
+
+    def _detect_product_type(self, text: str) -> Optional[str]:
+        lower = text.lower()
+        for product_type, patterns in self._product_type_rules:
+            patterns_to_check = [product_type, *patterns]
+            if any(re.search(rf"(?<!\w){re.escape(str(pattern).lower())}(?!\w)", lower) for pattern in patterns_to_check if str(pattern).strip()):
+                return product_type
+        return None
 
     @staticmethod
     def _coerce_rules(rules) -> list[tuple[str, list[str]]]:
@@ -387,7 +426,12 @@ class Normalizer:
             return f"{self._format_decimal(value)} Г"
         return f"{self._format_decimal(value)} УП"
 
-    def _cleanup_candidate(self, candidate: str, brand_match: Optional[str] = None) -> Optional[str]:
+    def _cleanup_candidate(
+        self,
+        candidate: str,
+        brand_match: Optional[str] = None,
+        product_type: Optional[str] = None,
+    ) -> Optional[str]:
         cleaned = self._volume_re.sub("", candidate)
         cleaned = re.sub(r"[()\[\]{}]", " ", cleaned)
         cleaned = re.sub(r"\bдля\s+мытья\s+посуды\b", " ", cleaned, flags=re.IGNORECASE)
@@ -400,6 +444,12 @@ class Normalizer:
             removal_terms.extend(patterns)
         for _, patterns in self._category_rules:
             removal_terms.extend(patterns)
+        if product_type:
+            removal_terms.append(product_type)
+            for canonical, patterns in self._product_type_rules:
+                if canonical == product_type:
+                    removal_terms.extend(patterns)
+                    break
         removal_terms.extend(["shampoo", "shampun"])
         for term in sorted(set(removal_terms), key=len, reverse=True):
             cleaned = re.sub(

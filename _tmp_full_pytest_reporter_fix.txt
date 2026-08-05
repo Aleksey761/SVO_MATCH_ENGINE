@@ -1,0 +1,76 @@
+.....................................F.F                                 [100%]
+================================== FAILURES ===================================
+_________________ test_run_sales_produces_sales_match_output __________________
+
+tmp_path = WindowsPath('C:/Users/user/AppData/Local/Temp/pytest-of-user/pytest-13/test_run_sales_produces_sales_0')
+
+    def test_run_sales_produces_sales_match_output(tmp_path: Path):
+        master_file = _create_master_workbook(tmp_path / "MASTER.xlsx")
+        sales_file = _create_sales_workbook(tmp_path / "SALES_2026-07-15.xlsx")
+    
+        result = Engine().run_sales(
+            master_file=master_file,
+            sales_file=sales_file,
+            output_file=tmp_path / "SALES_MATCH_15.07.2026.xlsx",
+        )
+    
+        assert result["document"] == "SALES"
+        assert result["rows"] == 1
+        assert result["match"] == 1
+        assert result["review"] == 0
+        assert result["sales_date"] == "15.07.2026"
+        assert result["output"] == str(tmp_path / "SALES_MATCH_15.07.2026.xlsx")
+        assert Path(result["output"]).exists()
+    
+        wb = load_workbook(tmp_path / "SALES_MATCH_15.07.2026.xlsx")
+        ws = wb.active
+        assert ws.title == "SALES"
+        assert ws.cell(row=1, column=1).value == "ÍÀÈÌÅÍÎÂÀÍÈÅ"
+        headers = [str(value or "").strip().upper() for value in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
+>       status_col = headers.index("MATCH_STATUS") + 1
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: list.index(x): x not in list
+
+tests\test_sales_pipeline.py:51: ValueError
+____ test_run_sales_finalizes_result_order_by_master_and_moves_review_last ____
+
+tmp_path = WindowsPath('C:/Users/user/AppData/Local/Temp/pytest-of-user/pytest-13/test_run_sales_finalizes_resul0')
+
+    def test_run_sales_finalizes_result_order_by_master_and_moves_review_last(tmp_path: Path):
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "MASTER"
+        ws.append(["SKU", "Category", "Brand", "Variant", "Volume", "MASTER_NAME"])
+        ws.append(["SKU-2", "Øàìïóíü", "SVO", "LIME", "1 ë", "Øàìïóíü SVO LIME 1 ë"])
+        ws.append(["SKU-1", "Øàìïóíü", "SVO", "AQUA", "1 ë", "Øàìïóíü SVO AQUA 1 ë"])
+        master_file = tmp_path / "MASTER.xlsx"
+        wb.save(master_file)
+    
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "SALES"
+        ws.append(["ÍÀÈÌÅÍÎÂÀÍÈÅ", "SKU", "Òèï òîâàðà", "Áðåíä", "Variant", "Îáúåì"])
+        ws.append(["SVO SHAMPUN AQUA 1 ë", None, None, None, None, None])
+        ws.append(["SVO SHAMPUN 1 ë", None, None, None, None, None])
+        ws.append(["SVO SHAMPUN LIME 1 ë", None, None, None, None, None])
+        sales_file = tmp_path / "SALES_2026-07-15.xlsx"
+        wb.save(sales_file)
+    
+        Engine().run_sales(
+            master_file=master_file,
+            sales_file=sales_file,
+            output_file=tmp_path / "SALES_MATCH_15.07.2026.xlsx",
+        )
+    
+        wb = load_workbook(tmp_path / "SALES_MATCH_15.07.2026.xlsx")
+        ws = wb.active
+        headers = [str(value or "").strip().upper() for value in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
+>       status_col = headers.index("MATCH_STATUS") + 1
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: list.index(x): x not in list
+
+tests\test_sales_pipeline.py:136: ValueError
+=========================== short test summary info ===========================
+FAILED tests/test_sales_pipeline.py::test_run_sales_produces_sales_match_output
+FAILED tests/test_sales_pipeline.py::test_run_sales_finalizes_result_order_by_master_and_moves_review_last
+2 failed, 38 passed in 13.44s

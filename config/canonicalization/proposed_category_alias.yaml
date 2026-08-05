@@ -1,0 +1,60 @@
+review_scope:
+  source: output/REVIEW_REPORT.xlsx
+  review_rows: 47
+  note: Suggestions only. Do not auto-apply.
+
+proposed_rules:
+  - source_text: КОФЕ КАПУЧИНО
+    normalized_text: Кофе
+    confidence: 0.96
+    frequency_in_revision: 1
+
+  - source_text: КОФЕ ЛАТТЕ
+    normalized_text: Кофе
+    confidence: 0.96
+    frequency_in_revision: 1
+
+  - source_text: КОФЕ МОККО
+    normalized_text: Кофе
+    confidence: 0.96
+    frequency_in_revision: 1
+
+  - source_text: ЧАЙ ЗЕЛЕННЫЙ
+    normalized_text: Чай
+    confidence: 0.97
+    frequency_in_revision: 1
+
+  - source_text: ЧАЙ ПЕРСИК
+    normalized_text: Чай
+    confidence: 0.97
+    frequency_in_revision: 1
+
+  - source_text: ЧАЙЛЕМОН
+    normalized_text: Чай
+    confidence: 0.86
+    frequency_in_revision: 1
+
+  - source_text: ЭНЕРГЕТИК АНАНАС
+    normalized_text: Энергетик
+    confidence: 0.97
+    frequency_in_revision: 1
+
+  - source_text: ЭНЕРГЕТИК МОХИТО
+    normalized_text: Энергетик
+    confidence: 0.97
+    frequency_in_revision: 1
+
+  - source_text: ЗАВТРАК DUO
+    normalized_text: Завтрак
+    confidence: 0.90
+    frequency_in_revision: 1
+
+  - source_text: ЗАВТРАК 450
+    normalized_text: Завтрак
+    confidence: 0.90
+    frequency_in_revision: 1
+
+  - source_text: Гель кондиционер для стирки, парфюмированный пион, розовый, 1 л
+    normalized_text: Кондиционер
+    confidence: 0.72
+    frequency_in_revision: 1

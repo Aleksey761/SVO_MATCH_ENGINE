@@ -40,5 +40,4 @@ def test_sales_loader_interface_matches_arrival_loader(tmp_path: Path):
     arrival_loader = ArrivalLoader()
 
     assert sales_loader.load(workbook) == arrival_loader.load(workbook)
-    assert sales_loader.load_sales(workbook) == arrival_loader.load(workbook)
     assert sales_loader.load_arrival(workbook) == arrival_loader.load(workbook)

@@ -1,0 +1,8 @@
+{
+  "gate": "master",
+  "status": "FAILED",
+  "errors": 1,
+  "dashboard_warnings": [
+    "Dashboard metrics mismatch: Matched(35) + Review(135) + Skipped(0) != PRICE rows(168)"
+  ]
+}

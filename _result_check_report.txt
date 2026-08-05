@@ -1,0 +1,57 @@
+=== HEADERS ===
+01. 
+02. 
+03. 
+04. 
+05. 
+06. 
+07. 
+08. 
+09. 
+10. 
+11. Склад 1
+12. 
+13. Склад 2
+14. 
+15. ВСЕГО
+16. Ср Годн
+17. 
+18. 
+19. MATCH_STATUS
+20. MATCH_SKU
+21. MATCH_MASTER_NAME
+22. MATCH_CONFIDENCE
+23. MATCH_REASONS
+
+=== FIRST_10_ROWS_AFTER_FINALIZATION ===
+ROW 2: [None, None, None, None, None, None, None, None, None, None, 'КОР', 'ШТ', 'КОР', 'ШТ', None, None, 'ЦЕНА', 'СУММА', None, None, None, None, None]
+ROW 3: ['Гель для душа GILAR Cherry 400 мл', 'SKU-001', 'Гель для душа', 'GILAR', 'Cherry', '400 мл', None, None, None, None, 81, 972, 143, 1716, 2688, datetime.datetime(2026, 7, 1, 0, 0), 65, None, 'MATCH', 'SKU-001', 'Гель для душа GILAR Cherry 400 мл', 100, None]
+ROW 4: ['Гель для душа GILAR Avocado 400 мл', 'SKU-002', 'Гель для душа', 'GILAR', 'Avocado', '400 мл', None, None, None, None, 14, 168, 60, 720, 168, datetime.datetime(2026, 7, 1, 0, 0), 65, None, 'MATCH', 'SKU-002', 'Гель для душа GILAR Avocado 400 мл', 100, None]
+ROW 5: ['Гель для душа GILAR Blackberry 400 мл', 'SKU-004', 'Гель для душа', 'GILAR', 'Blackberry', '400 мл', None, None, None, None, 44, 528, 60, 720, 528, datetime.datetime(2026, 7, 1, 0, 0), 65, None, 'MATCH', 'SKU-004', 'Гель для душа GILAR Blackberry 400 мл', 100, None]
+ROW 6: ['Шампунь women GILAR Intense 400 мл', 'SKU-005', 'Шампунь women', 'GILAR', 'Intense', '400 мл', None, None, None, None, 71, 852, 247, 2964, 852, datetime.datetime(2026, 6, 1, 0, 0), 71, None, 'MATCH', 'SKU-005', 'Шампунь women GILAR Intense 400 мл', 100, None]
+ROW 7: ['Шампунь women GILAR Lovely Moments 400 мл', 'SKU-007', 'Шампунь women', 'GILAR', 'Lovely Moments', '400 мл', None, None, None, None, 112, 672, 139, 1668, 2340, datetime.datetime(2026, 6, 1, 0, 0), 71, None, 'MATCH', 'SKU-007', 'Шампунь women GILAR Lovely Moments 400 мл', 100, None]
+ROW 8: ['Шампунь men GILAR Argan Oil 400 мл', 'SKU-008', 'Шампунь men', 'GILAR', 'Argan Oil', '400 мл', None, None, None, None, 102, 1224, None, None, 1224, datetime.datetime(2027, 5, 1, 0, 0), 71, None, 'MATCH', 'SKU-008', 'Шампунь men GILAR Argan Oil 400 мл', 100, None]
+ROW 9: ['Шампунь men GILAR Keratin Extracts 400 мл', 'SKU-009', 'Шампунь men', 'GILAR', 'Keratin Extracts', '400 мл', None, None, None, None, 60, 720, 144, 1728, 2448, datetime.datetime(2027, 5, 1, 0, 0), 71, None, 'MATCH', 'SKU-009', 'Шампунь men GILAR Keratin Extracts 400 мл', 100, None]
+ROW 10: ['Шампунь men GILAR Olive Oil 400 мл', 'SKU-011', 'Шампунь men', 'GILAR', 'Olive Oil', '400 мл', None, None, None, None, 190, 1140, 134, 1608, 1608, datetime.datetime(2026, 6, 1, 0, 0), 71, None, 'MATCH', 'SKU-011', 'Шампунь men GILAR Olive Oil 400 мл', 100, None]
+ROW 11: ['Шампунь sport GILAR Black 400 мл', 'SKU-012', 'Шампунь sport', 'GILAR', 'Black', '400 мл', None, None, None, None, 204, 1224, 53, 636, 636, datetime.datetime(2026, 6, 1, 0, 0), 71, None, 'MATCH', 'SKU-012', 'Шампунь sport GILAR Black 400 мл', 100, None]
+
+=== CHECKS ===
+MATCH_ROWS=198
+ACTION_ROWS(MATCH+REVIEW)=202
+SECOND_COLUMN_CONTAINS_SKU_FOR_MATCH=True
+NAME_REPLACED_WITH_MASTER_FOR_MATCH=False
+ONLY_CANONICAL_MASTER_NAMES_FOR_MATCH=False
+ORIGINAL_SALES_NAMES_LEFT_IN_MATCH=0
+
+=== SALES_NAME_NE_MASTER_NAME_AFTER_FINALIZATION ===
+MISMATCH_COUNT=2
+ROW=199 SKU=SKU-289
+  SALES_NAME(after)=Антинакипь DOMIX  1 л
+  MASTER_NAME=Антинакипь DOMIX 1 л
+ROW=200 SKU=SKU-290
+  SALES_NAME(after)=Антижир DOMIX  1 л
+  MASTER_NAME=Антижир DOMIX 1 л
+
+=== NON_CANONICAL_MATCH_NAMES ===
+ROW=199 NAME=Антинакипь DOMIX  1 л
+ROW=200 NAME=Антижир DOMIX  1 л

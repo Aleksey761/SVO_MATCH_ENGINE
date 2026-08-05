@@ -1,0 +1,25 @@
+review_scope:
+  source: output/REVIEW_REPORT.xlsx
+  review_rows: 47
+  note: Suggestions only. Do not auto-apply.
+
+proposed_rules:
+  - source_text: Oxgeen
+    normalized_text: OXGEEN
+    confidence: 0.93
+    frequency_in_revision: 2
+
+  - source_text: PERSIL
+    normalized_text: PERSIL
+    confidence: 0.95
+    frequency_in_revision: 1
+
+  - source_text: DUO
+    normalized_text: DUO
+    confidence: 0.55
+    frequency_in_revision: 1
+
+  - source_text: SVO Elegant White
+    normalized_text: SVO ELEGANT
+    confidence: 0.88
+    frequency_in_revision: 1
