@@ -459,21 +459,13 @@ def build_review_classification_reports(
     for item in price_items:
         engine.normalizer.normalize(item)
 
-    matcher = Matcher(master_items)
+    matcher = Matcher(
+        master_items,
+        auto_resolve_multiple_candidates=bool(auto_resolve_multiple_candidates),
+        auto_match_score_delta=float(auto_match_threshold),
+    )
     unresolved, _, _ = engine._apply_learning_map_matches(price_items, master_items)
     matcher.match_all(unresolved)
-
-    if auto_resolve_multiple_candidates:
-        for item in unresolved:
-            reasons = {str(reason or "").strip().upper() for reason in getattr(item, "review_reasons", [])}
-            if "MULTIPLE_MATCH" not in reasons:
-                continue
-            _try_auto_resolve_multiple_candidate(
-                item=item,
-                matcher=matcher,
-                master_items=master_items,
-                auto_match_threshold=float(auto_match_threshold),
-            )
 
     BusinessRules(master_items).apply(price_items)
     engine._validate_price_name_sku_conflicts(price_items)

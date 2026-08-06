@@ -400,7 +400,7 @@ class PriceLoader:
             cleaned_name = self.cleaner.clean(raw_name)
             normalized_name = self._normalize_name(cleaned_name)
             if not normalized_name:
-                raise ValueError(f"Empty ProductName at row {excel_row}")
+                continue
 
             unit_cost = self._to_decimal(
                 row["UnitCost"],

@@ -1,8 +1,33 @@
 {
   "gate": "master",
-  "status": "FAILED",
-  "errors": 1,
-  "dashboard_warnings": [
-    "Dashboard metrics mismatch: Matched(35) + Review(135) + Skipped(0) != PRICE rows(168)"
+  "status": "PASSED",
+  "errors": 0,
+  "warnings": 0,
+  "info": 0,
+  "results": [
+    {
+      "name": "Duplicate SKU",
+      "level": "ERROR",
+      "passed": true,
+      "count": 0,
+      "message": "No duplicate SKU found",
+      "details": []
+    },
+    {
+      "name": "Empty SKU",
+      "level": "ERROR",
+      "passed": true,
+      "count": 0,
+      "message": "No empty SKU found",
+      "details": []
+    },
+    {
+      "name": "Duplicate Business Key",
+      "level": "ERROR",
+      "passed": true,
+      "count": 0,
+      "message": "No duplicate business key found",
+      "details": []
+    }
   ]
 }

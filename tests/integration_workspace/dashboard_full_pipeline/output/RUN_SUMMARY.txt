@@ -21,6 +21,6 @@ Increased : 0
 Decreased : 0
 
 Execution time
-6 sec
+10 sec
 
 ====================================

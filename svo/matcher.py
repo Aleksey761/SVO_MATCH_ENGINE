@@ -50,10 +50,14 @@ class Matcher:
         master_items: list[MasterItem],
         confidence_threshold: float = 80.0,
         confidence_margin: float = 5.0,
+        auto_resolve_multiple_candidates: bool = False,
+        auto_match_score_delta: float = 20.0,
     ):
         self.master_items = list(master_items)
         self.confidence_threshold = confidence_threshold
         self.confidence_margin = confidence_margin
+        self.auto_resolve_multiple_candidates = auto_resolve_multiple_candidates
+        self.auto_match_score_delta = auto_match_score_delta
         self.index = {item.normalized_key: item for item in self.master_items}
         self.master_index: dict[str, MasterItem | list[MasterItem]] = {}
         self._build_master_index()
@@ -591,6 +595,35 @@ class Matcher:
             )
         return explanations
 
+    def _can_auto_resolve_multiple_candidates(
+        self,
+        item: ArrivalItem,
+        candidate_scores: list[dict[str, object]],
+    ) -> bool:
+        if not self.auto_resolve_multiple_candidates:
+            return False
+        if len(candidate_scores) < 2:
+            return False
+
+        best = candidate_scores[0]
+        second = candidate_scores[1]
+        best_score = float(best["score"])
+        second_score = float(second["score"])
+        score_difference = best_score - second_score
+        if score_difference < float(self.auto_match_score_delta):
+            return False
+
+        if best.get("rejection_reason") == "PRODUCT_TYPE_MISMATCH":
+            return False
+
+        breakdown = dict(best.get("breakdown") or {})
+        if float(breakdown.get("Brand", 0.0)) <= 0.0 and self._normalize_value(item.brand):
+            return False
+        if float(breakdown.get("Volume", 0.0)) <= 0.0 and self._normalize_value(item.volume):
+            return False
+
+        return best_score >= float(self.confidence_threshold)
+
     def _review_reasons(self, item: ArrivalItem, candidates: list[MasterItem], best_score: float) -> list[str]:
         reasons: list[str] = []
         if candidates and all(not self._product_type_matches(item, candidate) for candidate in candidates):
@@ -608,6 +641,30 @@ class Matcher:
             reasons.append("NO_VOLUME")
 
         return reasons
+
+    def _assign_match(self, item: ArrivalItem, master: MasterItem) -> ArrivalItem:
+        item.sku = master.sku
+        item.master_name = master.master_name or item.master_name or item.source_name
+        if getattr(item, "product_type", None) in (None, ""):
+            item.product_type = master.category
+        if getattr(item, "category", None) in (None, ""):
+            item.category = master.category
+        if getattr(item, "brand", None) in (None, ""):
+            item.brand = master.brand
+        if getattr(item, "variant", None) in (None, ""):
+            item.variant = master.variant
+        if getattr(item, "volume", None) in (None, ""):
+            item.volume = master.volume
+        if getattr(item, "aroma", None) in (None, ""):
+            item.aroma = master.aroma or master.variant
+        if hasattr(item, "canonical_master_name") and getattr(item, "canonical_master_name", None) in (None, ""):
+            item.canonical_master_name = item.master_name
+
+        item.status = "MATCH"
+        item.confidence = 100.0
+        item.review_reasons = []
+        item.review_explanation = {"confidence": 100.0, "reasons": [], "candidates": []}
+        return item
 
     def match(self, item: ArrivalItem) -> ArrivalItem:
         item.confidence = 0.0
@@ -641,18 +698,21 @@ class Matcher:
                 if len(above_threshold) == 1 and (len(scored_candidates) == 1 or (best_score - second_score) >= self.confidence_margin):
                     master = best_candidate
                 else:
-                    item.review_reasons = self._build_review_reasons(scored_candidates)
-                    item.review_explanation = {
-                        "confidence": item.confidence,
-                        "threshold": self.confidence_threshold,
-                        "margin": self.confidence_margin,
-                        "best_candidate": self._candidate_explanations([scored_candidates[0]])[0],
-                        "best_candidate_rejected_reason": self._rejection_summary(scored_candidates),
-                        "reasons": item.review_reasons,
-                        "candidates": self._candidate_explanations(scored_candidates),
-                    }
-                    item.status = "REVIEW"
-                    return item
+                    if self._can_auto_resolve_multiple_candidates(item, scored_candidates):
+                        master = best_candidate
+                    else:
+                        item.review_reasons = self._build_review_reasons(scored_candidates)
+                        item.review_explanation = {
+                            "confidence": item.confidence,
+                            "threshold": self.confidence_threshold,
+                            "margin": self.confidence_margin,
+                            "best_candidate": self._candidate_explanations([scored_candidates[0]])[0],
+                            "best_candidate_rejected_reason": self._rejection_summary(scored_candidates),
+                            "reasons": item.review_reasons,
+                            "candidates": self._candidate_explanations(scored_candidates),
+                        }
+                        item.status = "REVIEW"
+                        return item
             else:
                 best_score = 0.0
 
@@ -666,12 +726,7 @@ class Matcher:
             item.status = "REVIEW"
             return item
 
-        item.sku = master.sku
-        item.master_name = master.master_name
-        item.status = "MATCH"
-        item.confidence = 100.0
-        item.review_explanation = {"confidence": 100.0, "reasons": [], "candidates": []}
-        return item
+        return self._assign_match(item, master)
 
     def match_all(self, items: list[ArrivalItem]) -> list[ArrivalItem]:
         return [self.match(i) for i in items]
