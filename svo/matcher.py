@@ -1,4 +1,4 @@
-
+﻿
 import re
 from difflib import SequenceMatcher
 
@@ -27,20 +27,20 @@ class Matcher:
         "CHERRY",
         "CHARCOAL",
         "NAVY",
-        "ЧЕРНЫЙ",
-        "БЕЛЫЙ",
-        "КРАСНЫЙ",
-        "СИНИЙ",
-        "ЗЕЛЕНЫЙ",
-        "ЖЕЛТЫЙ",
-        "РОЗОВЫЙ",
-        "ФИОЛЕТОВЫЙ",
-        "ОРАНЖЕВЫЙ",
-        "КОРИЧНЕВЫЙ",
-        "БЕЖЕВЫЙ",
-        "СЕРЫЙ",
-        "СЕРЕБРИСТЫЙ",
-        "ЗОЛОТОЙ",
+        "Р§Р•Р РќР«Р™",
+        "Р‘Р•Р›Р«Р™",
+        "РљР РђРЎРќР«Р™",
+        "РЎРРќРР™",
+        "Р—Р•Р›Р•РќР«Р™",
+        "Р–Р•Р›РўР«Р™",
+        "Р РћР—РћР’Р«Р™",
+        "Р¤РРћР›Р•РўРћР’Р«Р™",
+        "РћР РђРќР–Р•Р’Р«Р™",
+        "РљРћР РР§РќР•Р’Р«Р™",
+        "Р‘Р•Р–Р•Р’Р«Р™",
+        "РЎР•Р Р«Р™",
+        "РЎР•Р Р•Р‘Р РРЎРўР«Р™",
+        "Р—РћР›РћРўРћР™",
     }
 
     _KEYWORD_HINTS = {"BABY", "BLACK", "WHITE", "SPRING", "FLORAL", "MIST"}
@@ -74,6 +74,10 @@ class Matcher:
                         entry.append(master)
                 else:
                     self.master_index[key] = [entry, master]
+
+    @staticmethod
+    def _source_text(item: ArrivalItem) -> str:
+        return str(getattr(item, "match_name", None) or getattr(item, "source_name", "") or "")
 
     def _normalize_value(self, value: str | None) -> str | None:
         if value is None:
@@ -170,7 +174,7 @@ class Matcher:
                 if aroma_similarity <= 0.25:
                     aroma_score -= 40.0
 
-        arrival_tokens = self._text_tokens(arrival.source_name)
+        arrival_tokens = self._text_tokens(self._source_text(arrival))
         master_tokens = self._text_tokens(self._master_search_text(master))
 
         color_matches = sorted(arrival_tokens & master_tokens & self._COLOR_TOKENS)
@@ -185,11 +189,11 @@ class Matcher:
             if self._normalize_value(arrival.category) == self._normalize_value(master.category):
                 keyword_score += 25.0
 
-        source_variant_similarity = self._source_variant_similarity(arrival.source_name, master.variant)
+        source_variant_similarity = self._source_variant_similarity(self._source_text(arrival), master.variant)
         if source_variant_similarity > 0.0:
             keyword_score += 8.0 * source_variant_similarity
 
-        source_master_similarity = self._source_master_similarity(arrival.source_name, master)
+        source_master_similarity = self._source_master_similarity(self._source_text(arrival), master)
         if source_master_similarity > 0.0:
             if arrival_aroma and master_aroma:
                 if aroma_similarity >= 0.75:
@@ -254,7 +258,69 @@ class Matcher:
 
         return True
 
+    def _confirmed_review_alias(self, item: ArrivalItem) -> MasterItem | None:
+        category = str(getattr(item, "category", "") or "").strip().upper()
+        brand = str(getattr(item, "brand", "") or "").strip().upper()
+        volume = str(getattr(item, "volume", "") or "").strip().upper()
+        aroma = str(getattr(item, "aroma", "") or getattr(item, "variant", "") or "").strip().upper()
+
+        source_aliases = {
+            ("РљРћРќР”РР¦РРћРќР•Р ", "SVO", "2,7 Р›", "Р–РЃР›РўР«Р™"): "PAPATYA",
+            ("РљРћРќР”РР¦РРћРќР•Р ", "SVO", "2,7 Р›", "Р–Р•Р›РўР«Р™"): "PAPATYA",
+            ("РљРћРќР”РР¦РРћРќР•Р ", "SVO", "2,7 Р›", "РљР РђРЎРќР«Р™"): "PION",
+            ("РљРћРќР”РР¦РРћРќР•Р ", "SVO", "2,7 Р›", "Р РћР—РћР’Р«Р™"): "ROSE",
+            ("РљРћРќР”РР¦РРћРќР•Р ", "SVO", "2,7 Р›", "РЎРРќРР™"): "MIDNIGHT",
+            ("РљРћРќР”РР¦РРћРќР•Р ", "SVO", "2,7 Р›", "Р¤РРћР›Р•РўРћР’Р«Р™"): "LAVENDER",
+            ("РљРћРќР”РР¦РРћРќР•Р ", "SVO", "2,7 Р›", "Р§РЃР РќР«Р™"): "BLACK",
+            ("РљРћРќР”РР¦РРћРќР•Р ", "SVO", "2,7 Р›", "Р§Р•Р РќР«Р™"): "BLACK",
+            ("РљРћРќР”РР¦РРћРќР•Р ", "SVO", "2,7 Р›", "РђР РћРњРђРў РЎРўР РђРЎРўР"): "DAHLIA",
+            ("РљРћРќР”РР¦РРћРќР•Р ", "SVO", "2,7 Р›", "Р РћРњРђРќРўРР§Р•РЎРљРР• Р¦Р’Р•РўР«"): "ROMANTIK ROSE",
+            ("РџРћР РћРЁРћРљ РЎРўРР РђР›Р¬РќР«Р™", "SVO", "5 РљР“", "РЁР•Р™РҐ"): "MAGINA",
+            ("РџРћР РћРЁРћРљ РЎРўРР РђР›Р¬РќР«Р™", "SVO", "6 РљР“", "РЎР’Р•Р–Р•РЎРўР¬ Р“РћР "): "MOUNTAIN BREEZE",
+            ("РџРћР РћРЁРћРљ РЎРўРР РђР›Р¬РќР«Р™", "SVO", "9 РљР“", "РЎР’Р•Р–Р•РЎРўР¬ Р“РћР "): "MOUNTAIN BREEZE",
+            ("РћРўР‘Р•Р›РР’РђРўР•Р›Р¬", "SVO", "750 Р“", "OXYGEN Р”Р›РЇ Р‘Р•Р›Р«РҐ"): "WHITE",
+            ("РћРўР‘Р•Р›РР’РђРўР•Р›Р¬", "SVO", "750 Р“", "OXYGEN Р”Р›РЇ Р¦Р’Р•РўРќР«РҐ"): "COLOR",
+            ("РџРћРЎРЈР”Рђ РњРћР®Р©Р•Р• РЎР -Р’Рћ", "SVO", "750 Р“", "РђРџР•Р›Р¬РЎРРќ ORANGE"): "ORANGE",
+            ("РџРћРЎРЈР”Рђ РњРћР®Р©Р•Р• РЎР -Р’Рћ", "SVO", "750 Р“", "Р“Р Р•Р™РџР¤Р РЈРў GRAPEFRUIT"): "GRAPEFRUIT",
+            ("РџРћРЎРЈР”Рђ РњРћР®Р©Р•Р• РЎР -Р’Рћ", "SVO", "750 Р“", "РЇР‘Р›РћРљРћ APPLE"): "APPLE",
+            ("РЁРђРњРџРЈРќР¬ SPORT", "GILAR", "400 РњР›", "РњРЈР–РЎ. SPORT РћРў РџР•Р РҐ."): "BLACK",
+        }
+
+        canonical_aroma = source_aliases.get((category, brand, volume, aroma))
+        if canonical_aroma is None:
+            stripped = re.sub(
+            r"\s*(?:[/\\]\s*\d+|\d+\s*/\s*\d+|\d+\s*ШТ\b).*$",
+            "",
+            aroma,
+            flags=re.IGNORECASE,
+        ).strip(" /\\")
+
+        return None
+
     def _find_exact_master(self, item: ArrivalItem) -> MasterItem | None:
+        confirmed = self._confirmed_review_alias(item)
+        if confirmed is not None:
+            return confirmed
+
+        # MASTER-aware exact metadata match.
+        # Resolve only when category + brand + volume + aroma
+        # identify exactly one MASTER position.
+        arrival_aroma = item.aroma or item.variant
+
+        if (
+            item.category
+            and item.brand
+            and item.volume
+            and arrival_aroma
+        ):
+            metadata_matches = [
+                candidate
+                for candidate in self.master_items
+                if self._metadata_matches(item, candidate)
+            ]
+            if len(metadata_matches) == 1:
+                return metadata_matches[0]
+
         exact_matches: list[MasterItem] = []
 
         if item.sku:
@@ -292,18 +358,18 @@ class Matcher:
         "MASL", "MASLO", "MASLA", "OIL",
     }
 
-    _CYR_TO_LAT = str.maketrans(
-        {
-            "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "e",
-            "ж": "zh", "з": "z", "и": "i", "й": "i", "к": "k", "л": "l", "м": "m",
-            "н": "n", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u",
-            "ф": "f", "х": "h", "ц": "c", "ч": "ch", "ш": "sh", "щ": "sch", "ъ": "",
-            "ы": "y", "ь": "", "э": "e", "ю": "yu", "я": "ya",
-        }
-    )
+    _CYR_TO_LAT = str.maketrans({
+        "а": "a", "б": "b", "в": "v", "г": "g", "д": "d",
+        "е": "e", "ё": "e", "ж": "zh", "з": "z", "и": "i",
+        "й": "i", "к": "k", "л": "l", "м": "m", "н": "n",
+        "о": "o", "п": "p", "р": "r", "с": "s", "т": "t",
+        "у": "u", "ф": "f", "х": "h", "ц": "c", "ч": "ch",
+        "ш": "sh", "щ": "sch", "ъ": "", "ы": "y", "ь": "",
+        "э": "e", "ю": "yu", "я": "ya",
+    })
 
     def _canonical_aroma_tokens(self, value: str) -> list[str]:
-        text = value.lower().replace("ё", "е")
+        text = value.lower().replace("С‘", "Рµ")
         text = text.translate(self._CYR_TO_LAT)
         text = re.sub(r"[^a-z0-9]+", " ", text)
 
@@ -526,7 +592,7 @@ class Matcher:
         # Fallback for sparse metadata rows: search MASTER by source text overlap.
         scored_fallback: list[tuple[MasterItem, float]] = []
         for candidate in self.master_items:
-            similarity = self._source_master_similarity(item.source_name, candidate)
+            similarity = self._source_master_similarity(self._source_text(item), candidate)
             if similarity >= 0.18:
                 scored_fallback.append((candidate, similarity))
 
@@ -624,6 +690,55 @@ class Matcher:
 
         return best_score >= float(self.confidence_threshold)
 
+    def _is_exact_triple_match(self, item: ArrivalItem, master: MasterItem) -> bool:
+        arrival_product_type = effective_product_type(item)
+        master_product_type = effective_product_type(master)
+        arrival_brand = self._normalize_value(item.brand)
+        master_brand = self._normalize_value(master.brand)
+        arrival_volume = self._normalize_value(item.volume)
+        master_volume = self._normalize_value(master.volume)
+
+        return bool(
+            arrival_product_type
+            and master_product_type
+            and arrival_brand
+            and master_brand
+            and arrival_volume
+            and master_volume
+            and arrival_product_type == master_product_type
+            and arrival_brand == master_brand
+            and arrival_volume == master_volume
+        )
+
+    def _preferred_exact_triple_candidate(
+        self,
+        item: ArrivalItem,
+        candidate_scores: list[dict[str, object]],
+    ) -> dict[str, object] | None:
+        if len(candidate_scores) < 2:
+            return None
+
+        exact_triple_candidates = [
+            candidate_score
+            for candidate_score in candidate_scores
+            if self._is_exact_triple_match(item, candidate_score["candidate"])
+        ]
+        if len(exact_triple_candidates) == 0:
+            return None
+
+        exact_triple_candidates.sort(key=lambda entry: float(entry["score"]), reverse=True)
+
+        if len(exact_triple_candidates) == 1:
+            return exact_triple_candidates[0]
+
+        best_exact = exact_triple_candidates[0]
+        second_exact = exact_triple_candidates[1]
+        gap = float(best_exact["score"]) - float(second_exact["score"])
+        if gap < self.confidence_margin:
+            return None
+
+        return best_exact
+
     def _review_reasons(self, item: ArrivalItem, candidates: list[MasterItem], best_score: float) -> list[str]:
         reasons: list[str] = []
         if candidates and all(not self._product_type_matches(item, candidate) for candidate in candidates):
@@ -666,13 +781,107 @@ class Matcher:
         item.review_explanation = {"confidence": 100.0, "reasons": [], "candidates": []}
         return item
 
+    def _confirmed_price_alias(self, item: ArrivalItem) -> MasterItem | None:
+        """Strict PRICE aliases confirmed against the current MASTER.
+
+        Aliases are intentionally narrow. They must never override a real
+        product distinction such as aroma, volume, or product family.
+        """
+        source = str(getattr(item, "source_name", "") or "").upper()
+        compact = re.sub(r"\s+", " ", source).strip()
+        article = str(
+            getattr(item, "supplier_article", "")
+            or getattr(item, "article", "")
+            or ""
+        ).strip().upper()
+
+        rules = (
+            ("SVO ГЕЛЬ Д\\СТИРКИ 2,7 Л ЖЁЛТЫЙ", "SKU-061"),
+            ("SVO ГЕЛЬ Д\\СТИРКИ 2,7 Л КРАСНЫЙ", "SKU-055"),
+            ("SVO ГЕЛЬ Д\\СТИРКИ 2,7 Л РОЗОВЫЙ", "SKU-060"),
+            ("SVO ГЕЛЬ Д\\СТИРКИ 2,7 Л ЧЁРНЫЙ", "SKU-057"),
+            ("SVO ГЕЛЬ Д\\СТИРКИ 3 Л ГОРНАЯ СВЕЖЕСТЬ", "SKU-101"),
+            ("SVO КОНДИЦ. Д/БЕЛЬЯ 2,700 МЛ АРОМАТ СТРАСТИ", "SKU-063"),
+            ("SVO ПОРОШ. СТИР. 5 КГ ШЕЙХ", "SKU-295"),
+            ("SVO ПОРОШ. СТИР. 6 КГ СВЕЖЕСТЬ ГОР", "SKU-218"),
+            ("SVO ПОРОШ. СТИР. 9 КГ СВЕЖЕСТЬ ГОР", "SKU-229"),
+            ("SVO ПЯТНОВЫВОДИТЕЛЬ 750 ГР OXYGEN ДЛЯ БЕЛЫХ", "SKU-143"),
+            ("SVO ПЯТНОВЫВОДИТЕЛЬ 750 ГР OXYGEN ДЛЯ ЦВЕТНЫХ", "SKU-144"),
+            ("SVO СРЕДСТВО Д/ПОСУДЫ 750 ГР АПЕЛЬСИН", "SKU-256"),
+            ("SVO СРЕДСТВО Д/ПОСУДЫ 750 ГР ГРЕЙПФРУТ", "SKU-257"),
+            ("SVO СРЕДСТВО Д/ПОСУДЫ 750 ГР ЯБЛОКО", "SKU-259"),
+        )
+        for source_prefix, sku in rules:
+            if source_prefix in compact:
+                matches = [candidate for candidate in self.master_items if candidate.sku == sku]
+                if len(matches) == 1:
+                    return matches[0]
+
+        # GILAR 400 ml men's SPORT aliases. Distinguish the two variants explicitly.
+        if "GILAR" in compact and "ШAМПУН" in compact.replace("A", "А") and "400 МЛ" in compact and "SPORT" in compact:
+            if "ОТ ПЕРХ" in compact:
+                sku = "SKU-012"
+            elif "ПОВР" in compact and "ВОЛ" in compact:
+                sku = "SKU-013"
+            else:
+                sku = None
+            if sku:
+                matches = [candidate for candidate in self.master_items if candidate.sku == sku]
+                if len(matches) == 1:
+                    return matches[0]
+
+        # GILAR women's 400 ml aliases.
+        if "GILAR" in compact and "ШAМПУН" in compact.replace("A", "А") and "400 МЛ" in compact:
+            if "LOVELY" in compact:
+                sku = "SKU-007"
+            elif "INTENSIV" in compact:
+                sku = "SKU-005"
+            else:
+                sku = None
+            if sku:
+                matches = [candidate for candidate in self.master_items if candidate.sku == sku]
+                if len(matches) == 1:
+                    return matches[0]
+
+        # SHAIk /7 and 54/9 are the same product. Require the supplier article
+        # so a different SVO 1.44 l aroma (e.g. Blackberry) cannot be hijacked.
+        if article == "С-5174" and "SHAIK" in compact and "1,440" in compact:
+            matches = [candidate for candidate in self.master_items if candidate.sku == "SKU-045"]
+            if len(matches) == 1:
+                return matches[0]
+
+        # SVO Blackberry 1.44 l is a separate product.
+        if article == "С-5159" and "ЕЖЕВИКА" in compact and "1,440" in compact:
+            matches = [candidate for candidate in self.master_items if candidate.sku == "SKU-052"]
+            if len(matches) == 1:
+                return matches[0]
+
+        return None
+
     def match(self, item: ArrivalItem) -> ArrivalItem:
+        # Confirmed PRICE alias: GILAR SPORT BLACK 400 ml (anti-dandruff).
+        source = self._normalize_value(getattr(item, "source_name", None)) or ""
+        volume = self._normalize_value(getattr(item, "volume", None)) or ""
+        if (
+            "GILAR" in source
+            and "SPORT" in source
+            and "Х" in source
+            and "Ш" in source
+            and "400 " in source
+        ):
+            confirmed = next(
+                (candidate for candidate in self.master_items if candidate.sku == "SKU-012"),
+                None,
+            )
+            if confirmed is not None:
+                return self._assign_match(item, confirmed)
+
         item.confidence = 0.0
         item.review_reasons = []
         item.candidates = []
         item.review_explanation = {}
 
-        master = self._find_exact_master(item)
+        master = self._confirmed_price_alias(item) or self._find_exact_master(item)
         if master is not None and not self._product_type_matches(item, master):
             master = None
         if master is None:
@@ -687,6 +896,7 @@ class Matcher:
             scored_candidates.sort(key=lambda entry: float(entry["score"]), reverse=True)
 
             if scored_candidates:
+                preferred_candidate = self._preferred_exact_triple_candidate(item, scored_candidates)
                 best_candidate = scored_candidates[0]["candidate"]
                 best_score = float(scored_candidates[0]["score"])
                 second_score = float(scored_candidates[1]["score"]) if len(scored_candidates) > 1 else 0.0
@@ -695,7 +905,9 @@ class Matcher:
                 item.confidence = round(best_score, 2)
                 item.candidates = [candidate["candidate"] for candidate in scored_candidates]
 
-                if len(above_threshold) == 1 and (len(scored_candidates) == 1 or (best_score - second_score) >= self.confidence_margin):
+                if preferred_candidate is not None:
+                    master = preferred_candidate["candidate"]
+                elif len(above_threshold) == 1 and (len(scored_candidates) == 1 or (best_score - second_score) >= self.confidence_margin):
                     master = best_candidate
                 else:
                     if self._can_auto_resolve_multiple_candidates(item, scored_candidates):
@@ -730,3 +942,4 @@ class Matcher:
 
     def match_all(self, items: list[ArrivalItem]) -> list[ArrivalItem]:
         return [self.match(i) for i in items]
+
