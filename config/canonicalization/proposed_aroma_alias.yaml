@@ -1,0 +1,85 @@
+review_scope:
+  source: output/REVIEW_REPORT.xlsx
+  review_rows: 47
+  note: Suggestions only. Do not auto-apply.
+
+proposed_rules:
+  - source_text: "Роза РОЗА ROSE"
+    normalized_text: ROSE
+    confidence: 0.98
+    frequency_in_revision: 5
+
+  - source_text: ROSE
+    normalized_text: ROSE
+    confidence: 0.99
+    frequency_in_revision: 1
+
+  - source_text: Подснежнмк
+    normalized_text: ПОДСНЕЖНИК
+    confidence: 0.97
+    frequency_in_revision: 1
+
+  - source_text: Подснежник
+    normalized_text: ПОДСНЕЖНИК
+    confidence: 0.99
+    frequency_in_revision: 4
+
+  - source_text: Горнвй
+    normalized_text: ГОРНЫЙ
+    confidence: 0.96
+    frequency_in_revision: 1
+
+  - source_text: Горгый
+    normalized_text: ГОРНЫЙ
+    confidence: 0.82
+    frequency_in_revision: 1
+
+  - source_text: Горный
+    normalized_text: ГОРНЫЙ
+    confidence: 0.99
+    frequency_in_revision: 3
+
+  - source_text: SWEET TROPIK
+    normalized_text: SWEET TROPIC
+    confidence: 0.94
+    frequency_in_revision: 2
+
+  - source_text: FRUT
+    normalized_text: FRUIT
+    confidence: 0.88
+    frequency_in_revision: 1
+
+  - source_text: PAPAIYA
+    normalized_text: PAPAYA
+    confidence: 0.90
+    frequency_in_revision: 1
+
+  - source_text: ORHIDEYA
+    normalized_text: ORCHIDEA
+    confidence: 0.75
+    frequency_in_revision: 1
+
+  - source_text: SHAFRAN
+    normalized_text: SAFFRON
+    confidence: 0.90
+    frequency_in_revision: 1
+
+  - source_text: SHALK
+    normalized_text: SILK
+    confidence: 0.55
+    frequency_in_revision: 1
+
+  - source_text: DOHIA
+    normalized_text: DAHLIA
+    confidence: 0.52
+    frequency_in_revision: 1
+
+  - source_text: MANGO
+    normalized_text: MANGO
+    confidence: 0.99
+    frequency_in_revision: 2
+
+  - source_text: SPRING
+    normalized_text: SPRING
+    confidence: 0.70
+    frequency_in_revision: 1

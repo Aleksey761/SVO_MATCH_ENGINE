@@ -1,0 +1,41 @@
+{
+  "output_path": "output/SALES_MANUAL_MAPPING.xlsx",
+  "counts": {
+    "TOTAL": 79,
+    "APPROVE": 1,
+    "REVIEW": 0,
+    "NO_MASTER": 78
+  },
+  "approve_rows": [
+    [
+      238,
+      "Стиральный порошок для цветного белья, SVO автомат.Магина  5 кг",
+      "Порошок стиральный SVO Magina 5 кг",
+      "SKU-295"
+    ]
+  ],
+  "review_headers": [
+    "SOURCE_ROW",
+    "НАИМЕНОВАНИЕ",
+    "MATCH_REASONS",
+    "POSSIBLE_MASTER_NAME",
+    "POSSIBLE_SKU",
+    "MASTER_PRODUCT_TYPE",
+    "SOURCE_PRODUCT_TYPE",
+    "DIAGNOSIS"
+  ],
+  "master_headers": [
+    "SKU",
+    "CATEGORY",
+    "BRAND",
+    "VARIANT",
+    "VOLUME",
+    "AROMA",
+    "C7",
+    "C8",
+    "C9",
+    "MASTER_NAME"
+  ],
+  "master_name_col": "MASTER_NAME",
+  "master_sku_col": "SKU"
+}

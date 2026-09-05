@@ -1,0 +1,189 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "inspect-workbooks",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"from openpyxl import load_workbook as l;w=l('output/NAME_CORRECTION_MAP.xlsx',data_only=True).active;print('MAP_COUNT',w.max_row-1);print('MAP_HEADERS',*[w.cell(1,c).value for c in range(1,w.max_column+1)],sep='|');[print('MAP_ROW',r,*[w.cell(r,c).value for c in range(1,w.max_column+1)],sep='|') for r in range(2,min(w.max_row,6)+1)];wb=l('output/NAME_NORMALIZATION_REPORT.xlsx',data_only=True);s=wb['SUMMARY'];c=wb['CORRECTED_NAMES'];u=wb['UNRESOLVED_NAMES'];[print('SUMMARY_ROW',r,*[s.cell(r,k).value for k in range(1,s.max_column+1)],sep='|') for r in range(1,s.max_row+1)];print('CORRECTED_COUNT',c.max_row-1);print('UNRESOLVED_COUNT',u.max_row-1);print('CORRECTED_HEADERS',*[c.cell(1,k).value for k in range(1,c.max_column+1)],sep='|');[print('CORRECTED_ROW',r,*[c.cell(r,k).value for k in range(1,c.max_column+1)],sep='|') for r in range(2,min(c.max_row,4)+1)]"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "python-probe-cmd",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"\"f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe\" -c \"print('PY_OK')\""
+			],
+			"isBackground": false
+		},
+		{
+			"label": "python-probe-direct",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"print(\"PY_OK\")"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "python-probe-ps",
+			"type": "shell",
+			"command": "& 'f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe' -c 'print(\"\"PY_OK\"\")'",
+			"isBackground": false
+		},
+		{
+			"label": "python-probe-ps2",
+			"type": "shell",
+			"command": "& 'f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe' -c 'print(''PY_OK'')'",
+			"isBackground": false
+		},
+		{
+			"label": "inspect-workbooks-ps",
+			"type": "shell",
+			"command": "& 'f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe' -c 'from openpyxl import load_workbook as l; w=l(\"output/NAME_CORRECTION_MAP.xlsx\",data_only=True).active; print(\"MAP_COUNT|\" + str(max(w.max_row-1,0))); print(\"MAP_HEADERS|\" + \"|\".join(\"\" if v is None else str(v) for v in [w.cell(1,c).value for c in range(1,w.max_column+1)])); [print(\"MAP_ROW|\" + str(r) + \"|\" + \"|\".join(\"\" if v is None else str(v) for v in [w.cell(r,c).value for c in range(1,w.max_column+1)])) for r in range(2,min(w.max_row,6)+1)]; wb=l(\"output/NAME_NORMALIZATION_REPORT.xlsx\",data_only=True); s=wb[\"SUMMARY\"]; c=wb[\"CORRECTED_NAMES\"]; u=wb[\"UNRESOLVED_NAMES\"]; [print(\"SUMMARY_ROW|\" + str(r) + \"|\" + \"|\".join(\"\" if v is None else str(v) for v in [s.cell(r,k).value for k in range(1,s.max_column+1)])) for r in range(1,s.max_row+1)]; print(\"CORRECTED_COUNT|\" + str(max(c.max_row-1,0))); print(\"UNRESOLVED_COUNT|\" + str(max(u.max_row-1,0))); [print(\"CORRECTED_ROW|\" + str(r) + \"|\" + \"|\".join(\"\" if v is None else str(v) for v in [c.cell(r,k).value for k in range(1,c.max_column+1)])) for r in range(2,min(c.max_row,4)+1)]'",
+			"isBackground": false
+		},
+		{
+			"label": "inspect-workbooks-ps2",
+			"type": "shell",
+			"command": "& 'f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe' -c 'from openpyxl import load_workbook as l; w=l(''output/NAME_CORRECTION_MAP.xlsx'',data_only=True).active; print(''MAP_COUNT|'' + str(max(w.max_row-1,0))); print(''MAP_HEADERS|'' + ''|''.join('''' if v is None else str(v) for v in [w.cell(1,c).value for c in range(1,w.max_column+1)])); [print(''MAP_ROW|'' + str(r) + ''|'' + ''|''.join('''' if v is None else str(v) for v in [w.cell(r,c).value for c in range(1,w.max_column+1)])) for r in range(2,min(w.max_row,6)+1)]; wb=l(''output/NAME_NORMALIZATION_REPORT.xlsx'',data_only=True); s=wb[''SUMMARY'']; c=wb[''CORRECTED_NAMES'']; u=wb[''UNRESOLVED_NAMES'']; [print(''SUMMARY_ROW|'' + str(r) + ''|'' + ''|''.join('''' if v is None else str(v) for v in [s.cell(r,k).value for k in range(1,s.max_column+1)])) for r in range(1,s.max_row+1)]; print(''CORRECTED_COUNT|'' + str(max(c.max_row-1,0))); print(''UNRESOLVED_COUNT|'' + str(max(u.max_row-1,0))); [print(''CORRECTED_ROW|'' + str(r) + ''|'' + ''|''.join('''' if v is None else str(v) for v in [c.cell(r,k).value for k in range(1,c.max_column+1)])) for r in range(2,min(c.max_row,4)+1)]'",
+			"isBackground": false
+		},
+		{
+			"label": "build-sales-product-type-review",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"_tmp_build_sales_product_type_review.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "inspect-sales-product-type-review",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"from openpyxl import load_workbook as l;wb=l('output/SALES_PRODUCT_TYPE_REVIEW.xlsx',data_only=True);r=wb['REVIEW_79'];s=wb['SUMMARY'];print('REVIEW_HEADERS|'+'|'.join(str(r.cell(1,c).value or '') for c in range(1,r.max_column+1)));print('REVIEW_COUNT|'+str(max(r.max_row-1,0)));[print('SUMMARY_ROW|'+str(i)+'|'+str(s.cell(i,1).value)+'|'+str(s.cell(i,2).value)) for i in range(1,s.max_row+1)]"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "build-sales-manual-mapping",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"_tmp_build_sales_manual_mapping.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "inspect-sales-manual-mapping",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"from openpyxl import load_workbook as l; wb=l('output/SALES_MANUAL_MAPPING.xlsx',data_only=True); m=wb['MANUAL_MAPPING']; s=wb['SUMMARY']; print('MAP_HEADERS|'+'|'.join(str(m.cell(1,c).value or '') for c in range(1,m.max_column+1))); print('MAP_ROWS|'+str(max(m.max_row-1,0))); [print('SUMMARY_ROW|'+str(i)+'|'+str(s.cell(i,1).value)+'|'+str(s.cell(i,2).value)) for i in range(1,s.max_row+1)]"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "apply-sales-manual-reviewed",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"_tmp_apply_sales_manual_reviewed.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "run-sales-review12-finalize",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"_tmp_apply_sales_review_12_mapping_and_finalize.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "inspect-sales-match-manual-headers",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"from openpyxl import load_workbook as l; ws=l('output/SALES_MATCH_MANUAL.xlsx',data_only=True).active; print('SHEET|'+ws.title); print('MAX|'+str(ws.max_row)+'|'+str(ws.max_column)); print('HEADERS|'+'|'.join('' if ws.cell(1,c).value is None else str(ws.cell(1,c).value) for c in range(1,ws.max_column+1))); [print('ROW|'+str(r)+'|'+'|'.join('' if ws.cell(r,c).value is None else str(ws.cell(r,c).value) for c in range(1,min(ws.max_column,10)+1))) for r in range(2,min(ws.max_row,8)+1)]"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "inspect-sales-match-manual-headers-script",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"_tmp_inspect_sales_match_manual_headers.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "inspect-review12-mapping",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"_tmp_inspect_review12_mapping.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "run-sales-review12-finalize-v2",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"_tmp_apply_sales_review_12_mapping_and_finalize.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "verify-row267-final",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"_tmp_verify_row267_final.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "build-sales-final-control-check",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"_tmp_sales_final_control_check.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "inspect-sales-final-control-check",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"from openpyxl import load_workbook as l;wb=l('output/SALES_FINAL_CONTROL_CHECK.xlsx',data_only=True);s=wb['SUMMARY'];n=wb['NEW_ROWS'];r=wb['REVIEW_3'];print('SHEETS|'+'|'.join(wb.sheetnames));print('SUMMARY_ROWS|'+str(s.max_row));[print('SUMMARY|'+str(s.cell(i,1).value)+'|'+str(s.cell(i,2).value)) for i in range(1,s.max_row+1) if s.cell(i,1).value is not None];print('NEW_ROWS_COUNT|'+str(max(n.max_row-1,0)));[print('NEW_ROW|'+'|'.join('' if n.cell(i,c).value is None else str(n.cell(i,c).value) for c in range(1,n.max_column+1))) for i in range(2,n.max_row+1)];print('REVIEW_COUNT|'+str(max(r.max_row-1,0)));[print('REVIEW_ROW|'+'|'.join('' if r.cell(i,c).value is None else str(r.cell(i,c).value) for c in range(1,r.max_column+1))) for i in range(2,r.max_row+1)]"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "inspect-sales-final-control-check-v2",
+			"type": "shell",
+			"command": "f:\\SVO\\AI\\SVO_MATCH_ENGINE\\.venv\\Scripts\\python.exe",
+			"args": [
+				"_tmp_inspect_sales_final_control_check.py"
+			],
+			"isBackground": false
+		}
+	]
+}

@@ -1,0 +1,23 @@
+================================
+
+MASTER AUDIT
+
+================================
+
+STATUS : PASSED
+
+Errors : 0
+Warnings : 0
+Info : 0
+
+--------------------------------
+
+Duplicate SKU ................. OK
+Empty SKU ..................... OK
+Duplicate Business Key ........ OK
+
+--------------------------------
+
+DETAILS
+
+No issues found.

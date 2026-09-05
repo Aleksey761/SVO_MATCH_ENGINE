@@ -1,0 +1,13 @@
+{
+  "finance_metrics": {
+    "Finance-complete SKU": 0,
+    "Inventory alias rows applied": 8,
+    "Missing MASTER for PRICE SKU": 2,
+    "SKU with stock": 2,
+    "Total SKU": 2
+  },
+  "missing_metric_rows": [],
+  "price_status_counts": {
+    "MATCH": 2
+  }
+}

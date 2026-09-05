@@ -1,0 +1,24 @@
+decimal_separators:
+  - ","
+  - "."
+
+units:
+  - canonical: Л
+    aliases:
+      - Л
+      - ЛИТР
+      - ЛИТРА
+      - ЛИТРОВ
+      - L
+    scale_to_liters: 1
+
+  - canonical: МЛ
+    aliases:
+      - МЛ
+      - ML
+    scale_to_liters: 0.001
+
+normalize_to:
+  liters_threshold: 1000
+  liters_canonical: Л
+  milliliters_canonical: МЛ

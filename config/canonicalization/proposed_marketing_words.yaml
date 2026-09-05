@@ -1,0 +1,45 @@
+review_scope:
+  source: output/REVIEW_REPORT.xlsx
+  review_rows: 47
+  note: Suggestions only. Do not auto-apply.
+
+proposed_rules:
+  - source_text: ПАРФЮМИРОВАННЫЙ
+    normalized_text: ""
+    confidence: 0.99
+    frequency_in_revision: 1
+
+  - source_text: ДЛЯ СТИРКИ
+    normalized_text: ""
+    confidence: 0.99
+    frequency_in_revision: 1
+
+  - source_text: РОЗОВЫЙ
+    normalized_text: ""
+    confidence: 0.78
+    frequency_in_revision: 1
+
+  - source_text: ЧЕРНЫЙ
+    normalized_text: ""
+    confidence: 0.44
+    frequency_in_revision: 3
+
+  - source_text: БЕЛЫЙ
+    normalized_text: ""
+    confidence: 0.40
+    frequency_in_revision: 1
+
+  - source_text: ЦВЕТНОЙ
+    normalized_text: ""
+    confidence: 0.36
+    frequency_in_revision: 1
+
+  - source_text: ELEGANT
+    normalized_text: ""
+    confidence: 0.22
+    frequency_in_revision: 1
+
+  - source_text: WHITE
+    normalized_text: ""
+    confidence: 0.28
+    frequency_in_revision: 1

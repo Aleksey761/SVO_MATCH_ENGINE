@@ -1,0 +1,44 @@
+========================================
+IMPROVEMENT PLAN
+----------------------------------------
+REVIEW SUMMARY
+TOTAL ROWS        : 202
+MATCH             : 201
+REVIEW            : 1
+UNIQUE REASONS    : 3
+----------------------------------------
+REVIEW REASONS
+REASON            : LOW_SCORE
+COUNT             : 1
+SEVERITY          : MEDIUM
+RECOMMENDED ACTION: Improve token normalization and matching rules for weak-scoring products.
+EXPECTED MATCH GAIN: 1
+ITEMS             :
+- ROW 177: Сборка 2,7 л + 3 л
+----------------------------------------
+REASON            : MULTIPLE_MATCH
+COUNT             : 1
+SEVERITY          : HIGH
+RECOMMENDED ACTION: Refine disambiguation rules for variant, aroma, and volume in MASTER and aliases.
+EXPECTED MATCH GAIN: 1
+ITEMS             :
+- ROW 177: Сборка 2,7 л + 3 л
+----------------------------------------
+REASON            : UNKNOWN_BRAND
+COUNT             : 1
+SEVERITY          : HIGH
+RECOMMENDED ACTION: Add missing brand aliases or dictionary entries for the detected source names.
+EXPECTED MATCH GAIN: 1
+ITEMS             :
+- ROW 177: Сборка 2,7 л + 3 л
+----------------------------------------
+PRIORITY SUMMARY
+HIGH              : 2
+MEDIUM            : 1
+LOW               : 0
+----------------------------------------
+FINAL FORECAST
+PROJECTED MATCH   : 202
+PROJECTED COVERAGE: 100.00%
+If all recommendations are implemented, the projected coverage is based on the best estimated gain per REVIEW item.
+========================================

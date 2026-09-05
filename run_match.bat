@@ -24,8 +24,10 @@ if not exist "%INPUT_DIR%" (
 )
 
 set "MASTER_COUNT=0"
+set "MASTER_FILE="
 for /f "usebackq delims=" %%F in (`dir /b /a-d "%INPUT_DIR%\*.xlsx" 2^>nul ^| findstr /i "master"`) do (
     set /a MASTER_COUNT+=1
+    set "MASTER_FILE=%%F"
 )
 
 if not "!MASTER_COUNT!"=="1" (
@@ -35,8 +37,10 @@ if not "!MASTER_COUNT!"=="1" (
 )
 
 set "ARRIVAL_COUNT=0"
+set "ARRIVAL_FILE="
 for /f "usebackq delims=" %%F in (`dir /b /a-d "%INPUT_DIR%\*.xlsx" 2^>nul ^| findstr /i "arrival"`) do (
     set /a ARRIVAL_COUNT+=1
+    set "ARRIVAL_FILE=%%F"
 )
 
 if not "!ARRIVAL_COUNT!"=="1" (
@@ -46,8 +50,13 @@ if not "!ARRIVAL_COUNT!"=="1" (
 )
 
 set "SALES_COUNT=0"
-for /f "usebackq delims=" %%F in (`dir /b /a-d "%INPUT_DIR%\*.xlsx" 2^>nul ^| findstr /i "sales"`) do (
-    set /a SALES_COUNT+=1
+for /f "usebackq delims=" %%F in (`dir /b /a-d "%INPUT_DIR%\*.xlsx" 2^>nul`) do (
+    if /I not "%%F"=="!MASTER_FILE!" (
+        if /I not "%%F"=="!ARRIVAL_FILE!" (
+            set /a SALES_COUNT+=1
+            set "SALES_FILE=%%F"
+        )
+    )
 )
 
 if "!SALES_COUNT!"=="0" (

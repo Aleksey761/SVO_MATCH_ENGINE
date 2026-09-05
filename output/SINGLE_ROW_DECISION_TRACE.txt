@@ -1,0 +1,107 @@
+====================================================
+INPUT
+====================================================
+Supplier row: 74
+Supplier name: SVO порош. стир. 1,3 кг МАЛЫШ Baby / 12шт
+Parsed ProductType: raw=ПОРОШОК СТИРАЛЬНЫЙ normalized=ПОРОШОК СТИРАЛЬНЫЙ
+Parsed Brand: raw=SVO normalized=SVO
+Parsed Volume: raw=3 КГ normalized=3 КГ
+
+====================================================
+MASTER SEARCH
+====================================================
+After ProductType filter: 101
+SKUs: SKU-149|SKU-150|SKU-151|SKU-152|SKU-153|SKU-154|SKU-155|SKU-156|SKU-157|SKU-158|SKU-159|SKU-160|SKU-161|SKU-162|SKU-163|SKU-164|SKU-165|SKU-166|SKU-167|SKU-168|SKU-169|SKU-170|SKU-291|SKU-171|SKU-172|SKU-173|SKU-174|SKU-175|SKU-176|SKU-177|SKU-178|SKU-179|SKU-180|SKU-181|SKU-182|SKU-183|SKU-184|SKU-185|SKU-186|SKU-187|SKU-188|SKU-189|SKU-190|SKU-191|SKU-192|SKU-193|SKU-194|SKU-195|SKU-196|SKU-197|SKU-198|SKU-199|SKU-200|SKU-201|SKU-202|SKU-203|SKU-204|SKU-205|SKU-206|SKU-207|SKU-208|SKU-209|SKU-210|SKU-211|SKU-212|SKU-213|SKU-214|SKU-295|SKU-215|SKU-216|SKU-217|SKU-218|SKU-219|SKU-220|SKU-221|SKU-222|SKU-223|SKU-224|SKU-225|SKU-226|SKU-227|SKU-228|SKU-229|SKU-230|SKU-231|SKU-232|SKU-233|SKU-234|SKU-235|SKU-236|SKU-237|SKU-238|SKU-239|SKU-240|SKU-241|SKU-242|SKU-243|SKU-244|SKU-245|SKU-246|SKU-247
+After Brand filter: 101
+SKUs: SKU-149|SKU-150|SKU-151|SKU-152|SKU-153|SKU-154|SKU-155|SKU-156|SKU-157|SKU-158|SKU-159|SKU-160|SKU-161|SKU-162|SKU-163|SKU-164|SKU-165|SKU-166|SKU-167|SKU-168|SKU-169|SKU-170|SKU-291|SKU-171|SKU-172|SKU-173|SKU-174|SKU-175|SKU-176|SKU-177|SKU-178|SKU-179|SKU-180|SKU-181|SKU-182|SKU-183|SKU-184|SKU-185|SKU-186|SKU-187|SKU-188|SKU-189|SKU-190|SKU-191|SKU-192|SKU-193|SKU-194|SKU-195|SKU-196|SKU-197|SKU-198|SKU-199|SKU-200|SKU-201|SKU-202|SKU-203|SKU-204|SKU-205|SKU-206|SKU-207|SKU-208|SKU-209|SKU-210|SKU-211|SKU-212|SKU-213|SKU-214|SKU-295|SKU-215|SKU-216|SKU-217|SKU-218|SKU-219|SKU-220|SKU-221|SKU-222|SKU-223|SKU-224|SKU-225|SKU-226|SKU-227|SKU-228|SKU-229|SKU-230|SKU-231|SKU-232|SKU-233|SKU-234|SKU-235|SKU-236|SKU-237|SKU-238|SKU-239|SKU-240|SKU-241|SKU-242|SKU-243|SKU-244|SKU-245|SKU-246|SKU-247
+After Volume filter: 11
+SKUs: SKU-193|SKU-194|SKU-195|SKU-196|SKU-197|SKU-198|SKU-199|SKU-200|SKU-201|SKU-202|SKU-203
+After Name similarity filter: 11
+SKUs: SKU-193|SKU-194|SKU-195|SKU-196|SKU-197|SKU-198|SKU-199|SKU-200|SKU-201|SKU-202|SKU-203
+
+====================================================
+SCORING
+====================================================
+SKU=SKU-193
+MASTER_NAME=
+Total score=154.24
+Breakdown: Name=64.24; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+SKU=SKU-200
+MASTER_NAME=
+Total score=152.41
+Breakdown: Name=62.41; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+SKU=SKU-203
+MASTER_NAME=
+Total score=150.99
+Breakdown: Name=60.99; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+SKU=SKU-194
+MASTER_NAME=
+Total score=75.0
+Breakdown: Name=-15.0; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+SKU=SKU-195
+MASTER_NAME=
+Total score=75.0
+Breakdown: Name=-15.0; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+SKU=SKU-196
+MASTER_NAME=
+Total score=75.0
+Breakdown: Name=-15.0; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+SKU=SKU-197
+MASTER_NAME=
+Total score=75.0
+Breakdown: Name=-15.0; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+SKU=SKU-198
+MASTER_NAME=
+Total score=75.0
+Breakdown: Name=-15.0; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+SKU=SKU-199
+MASTER_NAME=
+Total score=75.0
+Breakdown: Name=-15.0; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+SKU=SKU-201
+MASTER_NAME=
+Total score=75.0
+Breakdown: Name=-15.0; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+SKU=SKU-202
+MASTER_NAME=
+Total score=75.0
+Breakdown: Name=-15.0; Brand=20.0; ProductType=30.0; Volume=40.0; Other=0.0
+---
+
+====================================================
+FINAL DECISION
+====================================================
+best_candidate=SKU-193
+preferred_candidate=None
+best_score=154.24
+second_score=152.41
+confidence_threshold=80.0
+confidence_margin=5.0
+auto_resolve_multiple_candidates=False
+_can_auto_resolve_multiple_candidates()=False
+_preferred_exact_triple_candidate()=None
+
+====================================================
+WHY REVIEW
+====================================================
+Condition: master is not None and not _product_type_matches(item, master) | Result: FALSE
+Condition: master is None | Result: TRUE
+Condition: bool(scored_candidates) | Result: TRUE
+Condition: preferred_candidate is not None | Result: FALSE
+Condition: len(above_threshold) == 1 | Result: FALSE
+Condition: len(scored_candidates) == 1 | Result: FALSE
+Condition: (best_score - second_score) >= confidence_margin | Result: FALSE
+Condition: len(above_threshold) == 1 and (len(scored_candidates) == 1 or (best_score - second_score) >= confidence_margin) | Result: FALSE
+Condition: _can_auto_resolve_multiple_candidates(item, scored_candidates) | Result: FALSE
+THIS CONDITION CAUSED REVIEW
+Condition: master is None AND scored_candidates is True AND preferred_candidate is None AND margin gate is False AND auto_resolve gate is False | Result: TRUE

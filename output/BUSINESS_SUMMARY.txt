@@ -1,0 +1,16 @@
+========================================
+SVO ERP CORE
+BUSINESS SUMMARY
+----------------------------------------
+MASTER SKU        : 292
+Matched Arrival   : 0
+Matched Sales     : 188
+Total Arrival     : 0
+Total Sales       : 291770
+Coverage          : 64.38%
+Active SKU        : 188
+Inactive SKU      : 104
+Net Movement      : -291770
+----------------------------------------
+RESULT : SUCCESS
+========================================

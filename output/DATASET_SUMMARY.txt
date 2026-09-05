@@ -1,0 +1,16 @@
+========================================
+SVO ERP CORE
+MASTER DATASET SUMMARY
+----------------------------------------
+MASTER SKU      : 292
+Arrival linked  : 0
+Sales linked    : 188
+Arrival Qty     : 0
+Sales Qty       : 291770
+Coverage        : 64.38%
+Duplicate SKU   : 0
+Missing MASTER  : 0
+Integrity       : OK
+----------------------------------------
+RESULT : SUCCESS
+========================================

@@ -1,0 +1,18 @@
+aliases:
+  SVO:
+    - SVO
+  GILAR:
+    - GILAR
+  BOSSFIX:
+    - BOSSFIX
+
+default_brand: SVO
+
+default_brand_by_category:
+  - Кондиционер
+  - ЖМС
+  - Гель для душа
+  - Шампунь
+  - Жидкое мыло
+  - Крем-мыло
+  - Мыло

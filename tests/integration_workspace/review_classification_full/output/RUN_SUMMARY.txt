@@ -1,0 +1,26 @@
+====================================
+
+MASTER
+Records: 2
+
+PRICE
+Matched : 1
+Review  : 2
+New SKU : 1
+
+SALES
+Matched : 1
+Review  : 0
+
+STOCK
+Matched : 1
+Review  : 0
+
+Price changes
+Increased : 0
+Decreased : 0
+
+Execution time
+7 sec
+
+====================================

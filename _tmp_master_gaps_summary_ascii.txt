@@ -1,0 +1,20 @@
+Metric: Value
+Rows analyzed: 65
+Exact matches: 15
+Missing combinations: 50
+Top missing ProductType + Brand + Volume combinations: Count
+<EMPTY> | SVO | 440 МЛ: 12
+<EMPTY> | SVO | 7 Л: 6
+<EMPTY> | SVO | 700 МЛ: 5
+<EMPTY> | SVO | 750 Г: 5
+ШАМПУНЬ | GILAR | 400 МЛ: 5
+ШАМПУНЬ | GILAR | 500 МЛ: 4
+<EMPTY> | SVO | 5 Л: 3
+ПОДГУЗНИКИ | BOSSFIX | 76 УП: 3
+<EMPTY> | BOSSFIX | 5 Л: 1
+МЫЛО | GILAR | 500 МЛ: 1
+МЫЛО | SVO | 500 МЛ: 1
+ПОДГУЗНИКИ | BOSSFIX | 60 УП: 1
+ПОДГУЗНИКИ | BOSSFIX | 48 УП: 1
+ПОДГУЗНИКИ | BOSSFIX | 39 УП: 1
+ПОРОШОК СТИРАЛЬНЫЙ | SVO | 7 КГ: 1
