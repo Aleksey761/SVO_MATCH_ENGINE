@@ -2,10 +2,15 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 
 from svo.engine import Engine
 from svo.models import ArrivalItem
+
+
+@pytest.fixture(autouse=True)
+def _isolate_output_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(tmp_path)
 
 
 def _write_master(path: Path, rows: list[dict[str, str]]) -> Path:
@@ -239,6 +244,42 @@ def test_price_matching_raises_only_for_different_sku_with_same_canonical_name()
 
     with pytest.raises(ValueError, match="different SKU"):
         engine._validate_price_name_sku_conflicts([first, second])
+
+
+def test_name_normalization_report_does_not_copy_previous_unresolved_rows(tmp_path: Path):
+    output_dir = tmp_path / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    report_path = output_dir / "NAME_NORMALIZATION_REPORT.xlsx"
+
+    wb = Workbook()
+    ws_corrected = wb.active
+    ws_corrected.title = "CORRECTED_NAMES"
+    ws_corrected.append(["Source", "BEFORE_NAME", "AFTER_NAME", "MASTER_NAME", "SKU", "CHANGE_REASON"])
+    ws_unresolved = wb.create_sheet("UNRESOLVED_NAMES")
+    ws_unresolved.append(["Source", "BEFORE_NAME", "AFTER_NAME", "MASTER_NAME", "SKU", "CHANGE_REASON"])
+    ws_unresolved.append(["PRICE", "mystery foobar 999", "MYSTERY FOOBAR 999", "", "", "stale"])
+    ws_unresolved.append(["PRICE", "Unknown product without master", "UNKNOWN PRODUCT WITHOUT MASTER", "", "", "stale"])
+    ws_summary = wb.create_sheet("SUMMARY")
+    ws_summary.append(["Metric", "Value"])
+    wb.save(report_path)
+
+    master_file = _single_master(tmp_path)
+    price_file = _write_price(
+        tmp_path / "PRICE.xlsx",
+        [["SVO shampoo apple 1 l", 10, 20, None, None]],
+    )
+
+    Engine().run_price_matching(master_file=master_file, price_file=price_file)
+
+    report = load_workbook(report_path, data_only=True)
+    unresolved_sheet = report["UNRESOLVED_NAMES"]
+    unresolved_names = {
+        str(unresolved_sheet.cell(row=row, column=2).value or "").strip()
+        for row in range(2, unresolved_sheet.max_row + 1)
+    }
+
+    assert "mystery foobar 999" not in unresolved_names
+    assert "Unknown product without master" not in unresolved_names
 
 
 def test_price_matching_rejects_missing_price(tmp_path: Path):

@@ -64,6 +64,90 @@ def _create_inventory(path: Path) -> Path:
     return path
 
 
+def _create_inventory_with_custom_opening_date(path: Path, opening_date: str, closing_date: str) -> Path:
+    wb = Workbook()
+    ws = wb.active
+    ws.append([
+        "Наименование",
+        f"Остаток на складе (шт) на {opening_date}",
+        "Воронеж",
+        "Краснодар 1",
+        "Краснодар 2",
+        "розница",
+        f"Остаток на складе (шт) на {closing_date}",
+    ])
+    ws.append(["Item X", 30, 3, 2, 1, 1, 25])
+    wb.save(path)
+    return path
+
+
+def _create_inventory_without_dated_stock_header(path: Path) -> Path:
+    wb = Workbook()
+    ws = wb.active
+    ws.append([
+        "Наименование",
+        "Остаток на складе (шт)",
+        "Воронеж",
+        "Краснодар 1",
+        "Краснодар 2",
+        "розница",
+    ])
+    ws.append(["Item Z", 10, 1, 1, 1, 1])
+    wb.save(path)
+    return path
+
+
+def _create_inventory_with_sku(path: Path) -> Path:
+    wb = Workbook()
+    ws = wb.active
+    ws.append([
+        "SKU",
+        "Наименование",
+        "Остаток на складе (шт) на 20.02.2024",
+        "Воронеж",
+        "Краснодар 1",
+        "Краснодар 2",
+        "розница",
+        "Остаток на складе (шт) на 10.07.24",
+    ])
+    ws.append(["SKU-2", "Item A alias", 100, 10, 5, 5, 2, 74])
+    wb.save(path)
+    return path
+
+
+def _create_inventory_with_unknown_sku(path: Path) -> Path:
+    wb = Workbook()
+    ws = wb.active
+    ws.append([
+        "SKU",
+        "Наименование",
+        "Остаток на складе (шт) на 20.02.2024",
+        "Воронеж",
+        "Краснодар 1",
+        "Краснодар 2",
+        "розница",
+        "Остаток на складе (шт) на 10.07.24",
+    ])
+    ws.append(["SKU-999", "Item A", 100, 10, 5, 5, 2, 74])
+    wb.save(path)
+    return path
+
+
+def _create_result_ambiguous_name(path: Path) -> Path:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "RESULT"
+    ws.append(["REPORT", "SVO Match Engine"])
+    ws.append(["ARRIVAL_DATE", "10.07.24"])
+    ws.append(["METADATA", "arrival_date=10.07.24"])
+    ws.append([])
+    ws.append(["SOURCE_NAME", "CATEGORY", "BRAND", "VARIANT", "VOLUME", "SKU", "MASTER_NAME", "STATUS"])
+    ws.append(["Item A", "Cat", "Brand", "V1", "1 л", "SKU-1", "Master One", "MATCH"])
+    ws.append(["Item A", "Cat", "Brand", "V2", "1 л", "SKU-2", "Master Two", "MATCH"])
+    wb.save(path)
+    return path
+
+
 def _create_inventory_shuffled(path: Path) -> Path:
     wb = Workbook()
     ws = wb.active
@@ -130,6 +214,32 @@ def test_inventory_input_reader_maps_returns_and_retail_sales(tmp_path: Path):
         "sales": 3,
         "actual": 38,
     }
+
+
+def test_inventory_input_reader_supports_dynamic_opening_date_header(tmp_path: Path):
+    inventory_file = _create_inventory_with_custom_opening_date(
+        tmp_path / "REVISION 06.04.26.xlsx",
+        opening_date="15.03.2026",
+        closing_date="06.04.26",
+    )
+
+    quantities = InventoryInputReader().read_inventory_quantities(inventory_file)
+
+    assert len(quantities) == 1
+    assert quantities[0]["opening"] == 30
+    assert quantities[0]["actual"] == 25
+    assert quantities[0]["supplier_return"] == 6
+    assert quantities[0]["sales"] == 1
+
+
+def test_inventory_input_reader_requires_dated_stock_header(tmp_path: Path):
+    inventory_file = _create_inventory_without_dated_stock_header(tmp_path / "REVISION_BAD.xlsx")
+
+    try:
+        InventoryInputReader().read_inventory_quantities(inventory_file)
+        assert False, "Expected ValueError for missing dated stock header"
+    except ValueError as exc:
+        assert "with date header" in str(exc)
 
 
 def test_inventory_reconciliation_builds_stock_and_variance_sheets(tmp_path: Path):
@@ -262,3 +372,76 @@ def test_inventory_reconciliation_reports_duplicate_sku_usage(tmp_path: Path):
     assert summary["duplicate_result_sku"] >= 1
     # The same SKU receives quantities from multiple inventory rows and is aggregated.
     assert summary["duplicate_inventory_sku"] >= 1
+
+
+def test_inventory_reconciliation_prefers_exact_inventory_sku(tmp_path: Path):
+    master_file = _create_master(tmp_path / "MASTER_TEST.xlsx")
+    result_file = _create_result(tmp_path / "RESULT_SKU_FIRST.xlsx")
+    inventory_file = _create_inventory_with_sku(tmp_path / "REVISION_SKU.xlsx")
+    output_file = tmp_path / "STOCK_RECONCILIATION_SKU_FIRST.xlsx"
+
+    summary = build_inventory_reconciliation(
+        master_file=master_file,
+        result_file=result_file,
+        inventory_file=inventory_file,
+        output_file=output_file,
+    )
+
+    assert summary["matched_rows"] == 2
+    rows = _stock_rows(output_file)
+    row_by_sku = {row[0]: row for row in rows}
+    # Inventory row source name is alias, but explicit SKU maps deterministically to SKU-2.
+    assert row_by_sku["SKU-2"][2:9] == [100, 0, 20, 2, 78, 74, -4]
+
+
+def test_inventory_reconciliation_uses_unique_name_fallback(tmp_path: Path):
+    master_file = _create_master(tmp_path / "MASTER_TEST.xlsx")
+    result_file = _create_result(tmp_path / "RESULT_NAME_FALLBACK.xlsx")
+    inventory_file = _create_inventory(tmp_path / "REVISION_NAME_FALLBACK.xlsx")
+    output_file = tmp_path / "STOCK_RECONCILIATION_NAME_FALLBACK.xlsx"
+
+    summary = build_inventory_reconciliation(
+        master_file=master_file,
+        result_file=result_file,
+        inventory_file=inventory_file,
+        output_file=output_file,
+    )
+
+    assert summary["ambiguous_inventory_source"] == 0
+    assert summary["matched_rows"] == 2
+
+
+def test_inventory_reconciliation_reports_ambiguous_name_without_silent_sku_choice(tmp_path: Path):
+    master_file = _create_master(tmp_path / "MASTER_TEST.xlsx")
+    result_file = _create_result_ambiguous_name(tmp_path / "RESULT_AMBIGUOUS.xlsx")
+    inventory_file = _create_inventory(tmp_path / "REVISION_AMBIGUOUS.xlsx")
+    output_file = tmp_path / "STOCK_RECONCILIATION_AMBIGUOUS.xlsx"
+
+    summary = build_inventory_reconciliation(
+        master_file=master_file,
+        result_file=result_file,
+        inventory_file=inventory_file,
+        output_file=output_file,
+    )
+
+    assert summary["ambiguous_inventory_source"] >= 1
+    # No SKU should be picked silently from ambiguous source-name mapping.
+    rows = _stock_rows(output_file)
+    for row in rows:
+        assert row[2:9] == [0, 0, 0, 0, 0, 0, 0]
+
+
+def test_inventory_reconciliation_reports_missing_inventory_sku_link(tmp_path: Path):
+    master_file = _create_master(tmp_path / "MASTER_TEST.xlsx")
+    result_file = _create_result(tmp_path / "RESULT_MISSING_LINK.xlsx")
+    inventory_file = _create_inventory_with_unknown_sku(tmp_path / "REVISION_UNKNOWN_SKU.xlsx")
+    output_file = tmp_path / "STOCK_RECONCILIATION_UNKNOWN_SKU.xlsx"
+
+    summary = build_inventory_reconciliation(
+        master_file=master_file,
+        result_file=result_file,
+        inventory_file=inventory_file,
+        output_file=output_file,
+    )
+
+    assert summary["inventory_without_result_sku"] >= 1

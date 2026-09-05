@@ -6,6 +6,7 @@ from typing import Optional
 from openpyxl import Workbook, load_workbook
 
 from .loader import Loader
+from .models import MasterItem
 
 
 @dataclass
@@ -165,11 +166,61 @@ class DatasetBuilder:
         output_dir: Path,
     ) -> list[Path]:
         if explicit is None:
-            paths = sorted(output_dir.glob(pattern))
-            if paths:
-                return paths
-            return sorted(Path("output").glob(pattern))
+            # Respect the caller's output directory. Do not fall back to the
+            # repository-wide output directory: isolated builds/tests must not
+            # consume unrelated production match workbooks.
+            return sorted(output_dir.glob(pattern))
         return [Path(explicit)]
+
+    def _load_authoritative_master(self, master_file: Path) -> list[MasterItem]:
+        """Load the explicitly selected MASTER workbook directly.
+
+        DatasetBuilder owns the MASTER source contract for dataset construction: 
+        when build() selects input_dir/MASTER.xlsx, that exact workbook must be
+        parsed, even if an older Loader implementation contains legacy fallback
+        logic that substitutes MASTER_DATASET.xlsx.
+        """
+        wb = load_workbook(filename=master_file, data_only=True)
+        ws = wb.active
+
+        headers = [cell.value for cell in ws[1]]
+        header_to_index = {
+            str(value).strip().upper(): idx
+            for idx, value in enumerate(headers)
+            if value is not None and str(value).strip()
+        }
+
+        sku_idx = header_to_index.get("SKU", 0)
+        category_idx = header_to_index.get("CATEGORY", 1)
+        brand_idx = header_to_index.get("BRAND", 2)
+        variant_idx = header_to_index.get("VARIANT", 3)
+        volume_idx = header_to_index.get("VOLUME", 4)
+        aroma_idx = header_to_index.get("AROMA", 5)
+
+        def value_at(row: tuple, index: int | None) -> str:
+            if index is None or index >= len(row):
+                return ""
+            return str(row[index] or "").strip()
+
+        items: list[MasterItem] = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not row:
+                continue
+            sku = value_at(row, sku_idx)
+            if not sku:
+                continue
+            items.append(
+                MasterItem(
+                    sku=sku,
+                    category=value_at(row, category_idx),
+                    brand=value_at(row, brand_idx),
+                    variant=value_at(row, variant_idx),
+                    volume=value_at(row, volume_idx),
+                    aroma=value_at(row, aroma_idx),
+                    master_name="",
+                )
+            )
+        return items
 
     def build(
         self,
@@ -183,15 +234,21 @@ class DatasetBuilder:
         input_dir = Path(input_dir)
         output_file = Path(output_file)
 
-        try:
-            master_file, _, _, _, _ = self.loader.discover_workbooks(input_dir, require_sales=False)
-        except ValueError as exc:
-            candidates = list(input_dir.glob("MASTER.xlsx"))
-            if not candidates:
-                raise ValueError(f"MASTER.xlsx not found in {input_dir}") from exc
+        # MASTER.xlsx inside the requested input directory is authoritative.
+        # Do not let Loader.discover_workbooks() substitute another workbook
+        # such as a previously generated MASTER_DATASET.xlsx.
+        candidates = sorted(input_dir.glob("MASTER.xlsx"))
+        if candidates:
             master_file = candidates[0]
+        else:
+            try:
+                master_file, _, _, _, _ = self.loader.discover_workbooks(
+                    input_dir, require_sales=False
+                )
+            except ValueError as exc:
+                raise ValueError(f"MASTER.xlsx not found in {input_dir}") from exc
 
-        master_items = self.loader.load_master(master_file)
+        master_items = self._load_authoritative_master(master_file)
         dataset: dict[str, DatasetRecord] = {}
         duplicate_sku = 0
 

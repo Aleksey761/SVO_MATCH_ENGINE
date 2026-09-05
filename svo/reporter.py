@@ -1,6 +1,7 @@
 from pathlib import Path
 from openpyxl import Workbook
 from openpyxl import load_workbook
+from openpyxl.cell.cell import MergedCell
 
 from .models import ArrivalItem, MasterItem
 
@@ -11,6 +12,30 @@ class Reporter:
     @staticmethod
     def _normalize_header(value: object) -> str:
         return str(value or "").strip().upper()
+
+    @staticmethod
+    def _set_cell_value(ws, row: int, column: int, value: object) -> bool:
+        cell = ws.cell(row=row, column=column)
+        if isinstance(cell, MergedCell):
+            return False
+        cell.value = value
+        return True
+
+    @classmethod
+    def _find_sales_header_row(cls, ws) -> int | None:
+        required_headers = {"ВОРОНЕЖ", "КРАСНОДАР 1", "КРАСНОДАР 2"}
+        explicit_name_headers = {"НАИМЕНОВАНИЕ", "NAME", "PRODUCT", "PRODUCT NAME", "SOURCE_NAME"}
+
+        for row_number in range(1, min(ws.max_row, 12) + 1):
+            normalized = {
+                cls._normalize_header(ws.cell(row=row_number, column=col).value)
+                for col in range(1, ws.max_column + 1)
+            }
+            if required_headers.issubset(normalized):
+                return row_number
+            if required_headers.intersection(normalized) and explicit_name_headers.intersection(normalized):
+                return row_number
+        return None
 
     def _load_master_name_by_sku(self, master_file: str | Path | None) -> dict[str, object]:
         if master_file is None:
@@ -95,6 +120,40 @@ class Reporter:
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
         wb.save(output_file)
 
+        # SALES: preserve calculated shipped quantity in the final workbook.
+        # SalesLoader calculates item.shipped_qty = D + G + H.
+        if items:
+            out_wb = load_workbook(output_file)
+            out_ws = out_wb.active
+
+            headers = [str(c.value or "").strip() for c in out_ws[1]]
+            shipped_col = None
+            for i, header in enumerate(headers, start=1):
+                if header.casefold() in ("?????????", "shipped_qty", "shipped"):
+                    shipped_col = i
+                    break
+
+            if shipped_col is None:
+                shipped_col = out_ws.max_column + 1
+                out_ws.cell(row=1, column=shipped_col, value="????????")
+
+            shipped_by_row = {
+                int(item.row_number): (getattr(item, "shipped_qty", 0) or 0)
+                for item in items
+                if getattr(item, "row_number", None) is not None
+            }
+
+            for excel_row, shipped_qty in shipped_by_row.items():
+                if excel_row <= out_ws.max_row:
+                    out_ws.cell(
+                        row=excel_row,
+                        column=shipped_col,
+                        value=shipped_qty,
+                    )
+
+            out_wb.save(output_file)
+
+
     def write_matched_arrival(
         self,
         source_arrival_file: str | Path,
@@ -114,6 +173,7 @@ class Reporter:
         wb = load_workbook(filename=source_document_file, data_only=False)
         ws = wb.active
 
+        header_row = self._find_sales_header_row(ws) or 1
         start_col = ws.max_column + 1
         headers = [
             "MATCH_STATUS",
@@ -121,25 +181,27 @@ class Reporter:
             "MATCH_MASTER_NAME",
             "MATCH_CONFIDENCE",
             "MATCH_REASONS",
+            "Отгружено",
         ]
 
         for offset, header in enumerate(headers):
-            ws.cell(row=1, column=start_col + offset, value=header)
+            self._set_cell_value(ws, header_row, start_col + offset, header)
 
         items_by_row = {item.row_number: item for item in items}
         max_row = ws.max_row
 
-        for row_number in range(2, max_row + 1):
+        for row_number in range(header_row + 1, max_row + 1):
             item = items_by_row.get(row_number)
             if item is None:
                 continue
 
             reasons = ",".join(item.review_reasons) if item.review_reasons else ""
-            ws.cell(row=row_number, column=start_col + 0, value=item.status)
-            ws.cell(row=row_number, column=start_col + 1, value=item.sku or "")
-            ws.cell(row=row_number, column=start_col + 2, value=item.master_name or "")
-            ws.cell(row=row_number, column=start_col + 3, value=item.confidence)
-            ws.cell(row=row_number, column=start_col + 4, value=reasons)
+            self._set_cell_value(ws, row_number, start_col + 0, item.status)
+            self._set_cell_value(ws, row_number, start_col + 1, item.sku or "")
+            self._set_cell_value(ws, row_number, start_col + 2, item.master_name or "")
+            self._set_cell_value(ws, row_number, start_col + 3, item.confidence)
+            self._set_cell_value(ws, row_number, start_col + 4, reasons)
+            ws.cell(row=row_number, column=start_col + 5, value=getattr(item, "shipped_qty", 0) or 0)
 
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
         wb.save(output_file)
@@ -188,7 +250,10 @@ class Reporter:
         wb = load_workbook(filename=result_file, data_only=False)
         ws = wb.active
 
-        header_cells = [cell.value for cell in ws[1]]
+        sales_header_row = self._find_sales_header_row(ws)
+        header_row = sales_header_row or 1
+
+        header_cells = [ws.cell(row=header_row, column=col).value for col in range(1, ws.max_column + 1)]
         header_to_col: dict[str, int] = {}
         for idx, value in enumerate(header_cells, start=1):
             normalized = self._normalize_header(value)
@@ -218,15 +283,39 @@ class Reporter:
             "НАИМЕНОВАНИЕ": lambda item, name: name if str(name or "").strip() else item.master_name,
         }
 
-        # For the sales template, business columns are located before "Склад 1".
-        # We keep worksheet structure intact and only rename existing header cell values.
+        # SALES source files can have one or more leading blank/title rows.
+        # The final canonical result must expose the actual business header in row 1.
         sklad1_col = header_to_col.get("СКЛАД 1")
-        if sklad1_col is not None and sklad1_col > 7:
-            for col, title in enumerate(("№", "SKU", "Наименование", "Тип товара", "Бренд", "Variant", "Объем"), start=1):
-                ws.cell(row=1, column=col, value=title)
+        is_sales_result = sales_header_row is not None
+        if is_sales_result and header_row > 1:
+            leading_rows = header_row - 1
+            if all(
+                all(ws.cell(row=row_number, column=col).value is None for col in range(1, ws.max_column + 1))
+                for row_number in range(1, header_row)
+            ):
+                ws.delete_rows(1, leading_rows)
+                header_row = 1
 
-            # Rebuild header map after potential rename.
-            header_cells = [cell.value for cell in ws[1]]
+                # Rebuild all column locations after deleting leading rows.
+                header_cells = [ws.cell(row=header_row, column=col).value for col in range(1, ws.max_column + 1)]
+                header_to_col = {}
+                for idx, value in enumerate(header_cells, start=1):
+                    normalized = self._normalize_header(value)
+                    if normalized:
+                        header_to_col[normalized] = idx
+
+                match_status_col = header_to_col.get("MATCH_STATUS")
+                match_sku_col = header_to_col.get("MATCH_SKU")
+                match_master_name_col = header_to_col.get("MATCH_MASTER_NAME")
+                match_reasons_col = header_to_col.get("MATCH_REASONS")
+                match_confidence_col = header_to_col.get("MATCH_CONFIDENCE")
+
+        if is_sales_result:
+            canonical_headers = ("№", "SKU", "НАИМЕНОВАНИЕ", "ТИП ТОВАРА", "БРЕНД", "VARIANT", "ОБЪЕМ")
+            for col, title in enumerate(canonical_headers, start=1):
+                self._set_cell_value(ws, header_row, col, title)
+
+            header_cells = [ws.cell(row=header_row, column=col).value for col in range(1, ws.max_column + 1)]
             header_to_col = {}
             for idx, value in enumerate(header_cells, start=1):
                 normalized = self._normalize_header(value)
@@ -239,8 +328,10 @@ class Reporter:
         review_rows: list[list[object]] = []
 
         max_col = ws.max_column
-        for row_number in range(2, ws.max_row + 1):
+        for row_number in range(header_row + 1, ws.max_row + 1):
             status_value = str(ws.cell(row=row_number, column=match_status_col).value or "").strip().upper()
+            if status_value == "OUT_OF_SCOPE":
+                continue
             if status_value not in {"MATCH", "REVIEW"}:
                 fallback_match_sku = str(ws.cell(row=row_number, column=match_sku_col).value or "").strip()
                 fallback_master_name = (
@@ -307,11 +398,14 @@ class Reporter:
                 else:
                     row_values[number_col - 1] = None
 
-            if status_value != "MATCH":
-                for header_name in ("SKU", "ТИП ТОВАРА", "БРЕНД", "VARIANT", "ОБЪЕМ", "НАИМЕНОВАНИЕ"):
-                    target_col = header_to_col.get(header_name)
-                    if target_col is not None:
-                        row_values[target_col - 1] = None
+            if status_value == "REVIEW":
+                # Keep original source/business columns intact for REVIEW rows.
+                # Only technical match fields must stay empty except factual reasons.
+                row_values[match_sku_col - 1] = ""
+                if match_master_name_col is not None:
+                    row_values[match_master_name_col - 1] = ""
+                if match_confidence_col is not None:
+                    row_values[match_confidence_col - 1] = ""
 
         target_rows = list(actionable_rows)
         if len(target_rows) < len(ordered_rows):
@@ -320,29 +414,12 @@ class Reporter:
         elif len(target_rows) > len(ordered_rows):
             for stale_row in target_rows[len(ordered_rows):]:
                 for col in range(1, max_col + 1):
-                    ws.cell(row=stale_row, column=col).value = None
+                    self._set_cell_value(ws, stale_row, col, None)
             target_rows = target_rows[: len(ordered_rows)]
 
         for target_row, row_values in zip(target_rows, ordered_rows):
             for col, value in enumerate(row_values, start=1):
-                ws.cell(row=target_row, column=col).value = value
-
-        technical_columns = [
-            col
-            for col in range(1, ws.max_column + 1)
-            if self._is_technical_header(ws.cell(row=1, column=col).value)
-        ]
-        for col in reversed(technical_columns):
-            ws.delete_cols(col)
-
-        # Output contract: final files should not contain the business name column.
-        name_columns = [
-            col
-            for col in range(1, ws.max_column + 1)
-            if self._normalize_header(ws.cell(row=1, column=col).value) == "НАИМЕНОВАНИЕ"
-        ]
-        for col in reversed(name_columns):
-            ws.delete_cols(col)
+                self._set_cell_value(ws, target_row, col, value)
 
         wb.save(result_file)
 

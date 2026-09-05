@@ -1,6 +1,7 @@
 from pathlib import Path
 from decimal import Decimal
 
+import pytest
 from openpyxl import Workbook
 
 from svo.models import ArrivalItem
@@ -47,6 +48,14 @@ def test_price_cleaner_preserves_product_meaning_tokens():
     assert "1 l" in cleaned
 
 
+def test_price_cleaner_preserves_decimal_commas_in_sizes():
+    cleaner = PriceCleaner()
+
+    cleaned = cleaner.clean("SVO кондиц. д/белья 1,440 мл FLORAL MIST / 9")
+
+    assert "1,440 мл" in cleaned
+
+
 def test_price_cleaner_is_idempotent():
     cleaner = PriceCleaner()
 
@@ -66,6 +75,69 @@ def test_price_cleaner_integrates_with_normalizer():
     assert normalized.category == "Шампунь"
     assert normalized.volume == "1 Л"
     assert normalized.aroma == "APPLE"
+
+
+@pytest.mark.parametrize(
+    ("source_name", "expected_volume"),
+    [
+        ("SVO гель д/стирки 1,5 л SPRING", "1,5 Л"),
+        ("SVO кондиц. д/белья 1,440 мл FLORAL MIST", "1,44 Л"),
+        ("SVO кондиц. д/белья 2,700 мл SWEET TROPIC", "2,7 Л"),
+    ],
+)
+def test_normalizer_parses_supplier_split_and_decimal_volumes(source_name: str, expected_volume: str):
+    normalized = Normalizer().normalize(ArrivalItem(row_number=1, source_name=source_name))
+
+    assert normalized.volume == expected_volume
+
+
+@pytest.mark.parametrize(
+    ("source_name", "expected_category", "expected_variant", "expected_volume"),
+    [
+        ("SVO Гель д/Стирки 1 л FLORAL MIST", "Кондиционер", "FLORAL MIST", "1 Л"),
+        ("SVO Смягчитель 5 л ASK", "Кондиционер", "ASK", "5 Л"),
+        ("SVO средство д/посуды 750 гр ЯБЛОКО Apple", "Посуда моющее ср-во", "APPLE", "750 МЛ"),
+        ("BOSSFIX Подгузники Детские №4 (60шт) / 3", "Подгузники", "SIZE 4", "1 УП"),
+        ("GILAR Шампунь 400 мл мужс. ARGAN OIL", "Шампунь men", "ARGAN OIL", "400 МЛ"),
+        ("GILAR Шампунь 500 мл дозат GINSENG OIL", "Шампунь органический", "GINSENG", "500 МЛ"),
+        ("SVO гель д/стирки 2,7 л ЖЁЛТЫЙ", "Кондиционер", "VANILLA", "2,7 Л"),
+        ("SVO гель д/стирки 2,7 л ЧЁРНЫЙ", "Кондиционер", "BLACK", "2,7 Л"),
+        ("SVO кондиц. д/белья 2,700 мл АРОМАТ СТРАСТИ", "Кондиционер", "BLACK GEL", "2,7 Л"),
+        ("SVO порош. стир. 5 кг ШЕЙХ для цв. и бел", "Порошок стиральный", "MAGINA", "5 КГ"),
+    ],
+)
+def test_normalizer_applies_price_context_refinements(
+    source_name: str,
+    expected_category: str,
+    expected_variant: str,
+    expected_volume: str,
+):
+    normalized = Normalizer().normalize(ArrivalItem(row_number=1, source_name=source_name))
+
+    assert normalized.category == expected_category
+    assert normalized.product_type == expected_category
+    assert normalized.variant == expected_variant
+    assert normalized.aroma == expected_variant
+    assert normalized.volume == expected_volume
+
+
+@pytest.mark.parametrize(
+    ("source_name", "expected_variant"),
+    [
+        ("SVO порош. стир. 1,3 кг РОМАШКА Daisy / 12", "BABY"),
+        ("SVO порош. стир. 1,3 кг РОМАШКА Daisy для цв. и бел / 12", "COLOR"),
+        ("SVO порош. стир. 9 кг ПОДСНЕЖНИК для цв. и бел 100/1", "SNOWDROP"),
+        ("GILAR Шампунь 600 мл MENTOL \\12", "MINT"),
+        ("SVO порош. стир. 4 кг РОМАШКА Daisy для цв. и бел / 4", "COLOR"),
+        ("SVO порош. стир. 6 кг РОМАШКА для цветных", "COLOR"),
+        ("SVO порош. стир.10 кг РОМАШКА д\\цветного 90/1", "COLOR"),
+    ],
+)
+def test_normalizer_applies_confirmed_variant_and_color_canonicalization(source_name: str, expected_variant: str):
+    normalized = Normalizer().normalize(ArrivalItem(row_number=1, source_name=source_name))
+
+    assert normalized.variant == expected_variant
+    assert normalized.aroma == expected_variant
 
 
 def test_price_loader_uses_cleaner_for_supplier_schema(tmp_path: Path):

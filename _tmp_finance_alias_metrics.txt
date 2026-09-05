@@ -1,0 +1,3 @@
+SKU with stock=2
+Finance-complete SKU=0
+Inventory alias rows applied=0

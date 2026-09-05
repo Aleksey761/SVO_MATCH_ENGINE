@@ -1,9 +1,15 @@
 from pathlib import Path
 
+import pytest
 from openpyxl import Workbook, load_workbook
 
 import runner
 from svo.engine import Engine
+
+
+@pytest.fixture(autouse=True)
+def _isolate_output_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(tmp_path)
 
 
 def _write_master(path: Path, rows: list[dict[str, str]]) -> Path:

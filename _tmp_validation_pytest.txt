@@ -1,0 +1,38 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: F:\SVO\AI\SVO_MATCH_ENGINE
+collected 202 items
+
+tests\test_advisor.py ..                                                 [  0%]
+tests\test_analytics.py .......                                          [  4%]
+tests\test_arrival_date_parsing.py .........                             [  8%]
+tests\test_business_metrics.py .......                                   [ 12%]
+tests\test_business_rules.py ....                                        [ 14%]
+tests\test_dashboard_builder.py ..                                       [ 15%]
+tests\test_dashboard_builder_integration.py .                            [ 15%]
+tests\test_dataset_api.py .                                              [ 16%]
+tests\test_dataset_builder.py ......                                     [ 19%]
+tests\test_duplicate_report.py ...                                       [ 20%]
+tests\test_finance_calculator.py ....................................    [ 38%]
+tests\test_financial_sku_model.py ..                                     [ 39%]
+tests\test_full_pipeline.py .                                            [ 40%]
+tests\test_inventory_reconciliation.py ............                      [ 46%]
+tests\test_learning_map.py .....                                         [ 48%]
+tests\test_master_first.py .................                             [ 56%]
+tests\test_master_quality.py ..                                          [ 57%]
+tests\test_name_correction_layer.py ....                                 [ 59%]
+tests\test_price_cleaner.py .............................                [ 74%]
+tests\test_price_history.py .......                                      [ 77%]
+tests\test_price_history_integration.py .....                            [ 80%]
+tests\test_price_loader.py ....                                          [ 82%]
+tests\test_price_matching.py .............                               [ 88%]
+tests\test_price_reporting_pipeline.py .....                             [ 91%]
+tests\test_quality_runner.py ....                                        [ 93%]
+tests\test_review_classification.py .                                    [ 93%]
+tests\test_revision_loader.py ...                                        [ 95%]
+tests\test_runner_finance_mode.py ...                                    [ 96%]
+tests\test_runner_master_dataset.py .                                    [ 97%]
+tests\test_sales_loader.py ..                                            [ 98%]
+tests\test_sales_pipeline.py ....                                        [100%]
+
+======================= 202 passed in 222.70s (0:03:42) =======================

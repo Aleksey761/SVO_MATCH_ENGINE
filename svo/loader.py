@@ -93,18 +93,10 @@ class Loader:
 
     def load_master(self, filename: str | Path) -> List[MasterItem]:
         source_path = Path(filename)
+
+        # An explicitly supplied MASTER workbook is authoritative.
+        # Never silently substitute a previously generated MASTER_DATASET.xlsx.
         master_path = source_path
-        canonical_master = Path("data") / "MASTER.xlsx"
-        if source_path.resolve() == canonical_master.resolve():
-            dataset_candidates = [
-                source_path.parent.parent / "output" / "MASTER_DATASET.xlsx",
-                Path("output") / "MASTER_DATASET.xlsx",
-                source_path.with_name("MASTER_DATASET.xlsx"),
-            ]
-            for candidate in dataset_candidates:
-                if candidate.exists():
-                    master_path = candidate
-                    break
 
         wb = load_workbook(filename=master_path, data_only=True)
         ws = wb.active
@@ -124,7 +116,9 @@ class Loader:
         variant_idx = header_to_index.get("VARIANT", 3)
         volume_idx = header_to_index.get("VOLUME", 4)
         aroma_idx = header_to_index.get("AROMA", 5)
-        # MASTER_NAME must come directly from column J in MASTER_DATASET.xlsx.
+
+        # MASTER_DATASET uses column J for MASTER_NAME. For a plain MASTER.xlsx
+        # this column may be absent, in which case an empty master_name is used.
         master_name_idx = 9
 
         def value_at(row: tuple, index: int | None) -> str:
@@ -132,8 +126,6 @@ class Loader:
                 return ""
             return str(row[index] or "").strip()
 
-        # MASTER_DATASET expected columns:
-        # A=SKU B=CATEGORY C=BRAND D=VARIANT E=VOLUME F=AROMA J=MASTER_NAME
         for row in ws.iter_rows(min_row=2, values_only=True):
             if not row:
                 continue

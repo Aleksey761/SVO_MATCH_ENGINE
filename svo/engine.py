@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 from datetime import datetime, timezone
 import re
 from shutil import copyfile
@@ -10,6 +10,7 @@ from svo.business_rules import BusinessRules
 from svo.learning_map import LearningMap, canonical_supplier_value
 from svo.loader import Loader
 from svo.matcher import Matcher
+from svo.name_correction import NameCorrectionLayer
 from svo.normalizer import Normalizer
 from svo.price_loader import PriceLoader
 from svo.quality import run_quality_gate
@@ -38,6 +39,112 @@ class Engine:
     @staticmethod
     def _master_by_sku(master_items: list) -> dict[str, object]:
         return {str(item.sku or "").strip(): item for item in master_items if str(item.sku or "").strip()}
+
+    @staticmethod
+    def _extract_rule_type(change_reason: str) -> str:
+        if not change_reason:
+            return "TYPO"
+        first = change_reason.split(";", 1)[0].strip()
+        return first.split(":", 1)[0].strip() if ":" in first else "TYPO"
+
+    def _apply_name_corrections(self, items: list, *, source: str, correction_layer: NameCorrectionLayer) -> None:
+        for item in items:
+            correction_layer.apply_to_item(item, source=source)
+
+    def _apply_exact_after_correction(self, items: list, *, source: str, correction_layer: NameCorrectionLayer) -> int:
+        exact_count = 0
+        for item in items:
+            if str(getattr(item, "status", "") or "").upper() == "MATCH":
+                continue
+
+            resolved = correction_layer.resolve_master_exact(str(getattr(item, "source_name", "") or ""))
+            if resolved is None:
+                continue
+
+            sku, master_name = resolved
+            if not sku or not master_name:
+                continue
+
+            item.sku = sku
+            item.master_name = master_name
+            item.status = "MATCH"
+            item.confidence = 100.0
+            item.review_reasons = []
+            item.candidates = []
+            item.review_explanation = {
+                "confidence": 100.0,
+                "reasons": [],
+                "candidates": [],
+                "source": "EXACT_AFTER_CORRECTION",
+            }
+            exact_count += 1
+
+            before_name = str(getattr(item, "source_name_before_correction", "") or "").strip()
+            after_name = str(getattr(item, "source_name_after_correction", item.source_name) or "").strip()
+            reason = str(getattr(item, "name_correction_reason", "") or "").strip()
+            if before_name and before_name != after_name:
+                correction_layer.record_correction_map_row(
+                    source=source,
+                    wrong_name=before_name,
+                    corrected_name=after_name,
+                    sku=sku,
+                    master_name=master_name,
+                    rule_type=self._extract_rule_type(reason),
+                    evidence=reason or "exact master-name match after correction",
+                )
+
+        return exact_count
+
+    @staticmethod
+    def _apply_sales_out_of_scope(items: list) -> int:
+        expected_sources = {
+            72: "КОФЕ КАПУЧИНО",
+            73: "КОФЕ ЛАТТЕ",
+            74: "КОФЕ МОККО",
+            75: "ЧАЙ ЗЕЛЕННЫЙ",
+            76: "ЧАЙ ПЕРСИК",
+            77: "ЧАЙЛЕМОН",
+            78: "ЧАЙ МАНГО",
+            79: "ЭНЕРГЕТИК 500",
+            80: "ЭНЕРГЕТИК 250",
+            81: "ЭНЕРГЕТИК КОКОС",
+            82: "ЭНЕРГЕТИК АНАНАС",
+            83: "ЭНЕРГЕТИК МОХИТО",
+            84: "ЗАВТРАК DUO",
+            85: "ЗАВТРАК 450",
+        }
+        out_of_scope_count = 0
+        for item in items:
+            source = " ".join(str(getattr(item, "source_name", "") or "").strip().upper().split())
+            if expected_sources.get(getattr(item, "row_number", None)) != source:
+                continue
+
+            item.status = "OUT_OF_SCOPE"
+            item.sku = None
+            item.master_name = None
+            item.confidence = 0.0
+            item.review_reasons = []
+            item.candidates = []
+            item.review_explanation = {}
+            out_of_scope_count += 1
+
+        return out_of_scope_count
+
+    def _record_name_correction_diagnostics(self, items: list, *, source: str, correction_layer: NameCorrectionLayer) -> None:
+        for item in items:
+            before_name = str(getattr(item, "source_name_before_correction", "") or "").strip()
+            after_name = str(getattr(item, "source_name_after_correction", getattr(item, "source_name", "")) or "").strip()
+            if not before_name:
+                continue
+            correction_layer.record_diagnostic(
+                source=source,
+                before_name=before_name,
+                after_name=after_name,
+                master_name=str(getattr(item, "master_name", "") or "").strip(),
+                sku=str(getattr(item, "sku", "") or "").strip(),
+                change_reason=str(getattr(item, "name_correction_reason", "") or "").strip(),
+                status=str(getattr(item, "status", "") or "").strip().upper(),
+            )
 
     def _apply_learning_map_matches(self, items: list, master_items: list) -> tuple[list, int, int]:
         master_by_sku = self._master_by_sku(master_items)
@@ -387,7 +494,7 @@ class Engine:
     @staticmethod
     def _is_revision_document(filename: str | Path) -> bool:
         stem = Path(filename).stem.lower()
-        return "revision" in stem or "ревиз" in stem
+        return "revision" in stem or "СЂРµРІРёР·" in stem
 
     @staticmethod
     def _parse_revision_date_from_filename(filename: str | Path) -> str | None:
@@ -462,11 +569,16 @@ class Engine:
         document_date: str | None,
         summary_key: str,
         write_summary: bool = True,
+        source_for_correction: str = "SALES",
     ):
         master = self.loader.load_master(master_file)
         master_quality = run_quality_gate(gate="master", dataframe=self._master_to_quality_rows(master))
         if not master_quality["passed"]:
             raise RuntimeError("MASTER AUDIT FAILED\nSee output/MASTER_AUDIT.txt")
+
+        correction_layer = NameCorrectionLayer(master)
+        self._apply_name_corrections(document_items, source=source_for_correction, correction_layer=correction_layer)
+        self._apply_exact_after_correction(document_items, source=source_for_correction, correction_layer=correction_layer)
 
         for item in document_items:
             self.normalizer.normalize(item)
@@ -475,10 +587,15 @@ class Engine:
             self.revision_name_canonicalizer.apply_all(document_items)
 
         matcher = Matcher(master)
-        unresolved_items, learning_reused, learning_stale = self._apply_learning_map_matches(document_items, master)
+        unresolved_seed = [item for item in document_items if str(getattr(item, "status", "") or "").upper() != "MATCH"]
+        unresolved_items, learning_reused, learning_stale = self._apply_learning_map_matches(unresolved_seed, master)
         matcher.match_all(unresolved_items)
         BusinessRules(master).apply(document_items)
+        out_of_scope_count = self._apply_sales_out_of_scope(document_items) if document_name == "SALES" else 0
         self.items = document_items
+        self._record_name_correction_diagnostics(document_items, source=source_for_correction, correction_layer=correction_layer)
+        correction_layer.write_name_correction_map()
+        correction_layer.write_name_normalization_report()
 
         match_count = sum(1 for item in document_items if item.status == "MATCH")
         review_count = sum(1 for item in document_items if item.status == "REVIEW")
@@ -505,6 +622,7 @@ class Engine:
             "rows": len(document_items),
             "match": match_count,
             "review": review_count,
+            "out_of_scope": out_of_scope_count,
             "items": document_items,
             "output": str(output_file),
             "review_report": str(review_report_file),
@@ -532,14 +650,21 @@ class Engine:
             raise RuntimeError("MASTER AUDIT FAILED\nSee output/MASTER_AUDIT.txt")
 
         price_items = self.price_loader.load(price_file)
+        correction_layer = NameCorrectionLayer(master)
+        self._apply_name_corrections(price_items, source="PRICE", correction_layer=correction_layer)
+        self._apply_exact_after_correction(price_items, source="PRICE", correction_layer=correction_layer)
         for item in price_items:
             self.normalizer.normalize(item)
 
         print("Matching...")
-        matcher = Matcher(master)
-        unresolved_items, learning_reused, learning_stale = self._apply_learning_map_matches(price_items, master)
+        matcher = Matcher(master, auto_resolve_multiple_candidates=True, auto_match_score_delta=8.0)
+        unresolved_seed = [item for item in price_items if str(getattr(item, "status", "") or "").upper() != "MATCH"]
+        unresolved_items, learning_reused, learning_stale = self._apply_learning_map_matches(unresolved_seed, master)
         matcher.match_all(unresolved_items)
         BusinessRules(master).apply(price_items)
+        self._record_name_correction_diagnostics(price_items, source="PRICE", correction_layer=correction_layer)
+        correction_layer.write_name_correction_map()
+        correction_layer.write_name_normalization_report()
         self._validate_price_name_sku_conflicts(price_items)
 
         print("Updating PriceHistory...")
@@ -554,7 +679,15 @@ class Engine:
         print(f"Updated records: {history_summary.updated_records}")
         print(f"Skipped: {history_summary.skipped_records}")
 
-        match_output = Path(output_file) if output_file is not None else Path("output") / "price_match.xlsx"
+        if output_file is not None:
+            match_output = Path(output_file)
+        else:
+            price_parent = Path(price_file).resolve().parent
+            if price_parent.name.lower() == "data":
+                default_output_dir = Path("output")
+            else:
+                default_output_dir = price_parent / "output"
+            match_output = default_output_dir / "price_match.xlsx"
         match_report_path = self._write_price_match_report(
             price_items,
             match_output,
@@ -624,9 +757,9 @@ class Engine:
         for idx, header in enumerate(normalized, start=1):
             if header == "SKU":
                 sku_col = idx
-            elif header == "НАИМЕНОВАНИЕ":
+            elif header == "РќРђРРњР•РќРћР’РђРќРР•":
                 name_col = idx
-            elif header == "№":
+            elif header == "в„–":
                 number_col = idx
 
         start_col = ws.max_column + 1
@@ -730,6 +863,7 @@ class Engine:
             document_date=arrival_date,
             summary_key="arrival",
             write_summary=True,
+            source_for_correction="INVENTORY" if is_revision_document else "SALES",
         )
         result["sales_date"] = sales_date
         result["sales_file"] = str(Path(sales_file)) if sales_file is not None else None
@@ -806,9 +940,12 @@ class Engine:
             document_date=sales_date,
             summary_key="sales",
             write_summary=False,
+            source_for_correction="SALES",
         )
         result["arrival_file"] = str(Path(arrival_file)) if arrival_file is not None else None
         result["arrival_date"] = arrival_date
         result["sales_date"] = sales_date
         result["sales_file"] = str(Path(sales_file))
         return result
+
+

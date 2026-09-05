@@ -1,8 +1,14 @@
 from pathlib import Path
 
+import pytest
 from openpyxl import Workbook, load_workbook
 
 from svo.engine import Engine
+
+
+@pytest.fixture(autouse=True)
+def _isolate_output_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(tmp_path)
 
 
 def _create_master_workbook(path: Path) -> Path:
@@ -19,8 +25,9 @@ def _create_sales_workbook(path: Path) -> Path:
     wb = Workbook()
     ws = wb.active
     ws.title = "SALES"
-    ws.append(["НАИМЕНОВАНИЕ", "SKU", "Тип товара", "Бренд", "Variant", "Объем"])
-    ws.append(["SVO SHAMPUN AQUA 1 л", None, None, None, None, None])
+    ws.append([None, None, None, None, None, None, None, None])
+    ws.append([None, "Наименование", None, "Воронеж", None, None, "Краснодар 1", "Краснодар 2"])
+    ws.append([None, "SVO SHAMPUN AQUA 1 л", None, 5, None, None, 3, 2])
     wb.save(path)
     return path
 
@@ -47,7 +54,7 @@ def test_run_sales_produces_sales_match_output(tmp_path: Path):
     ws = wb.active
     assert ws.title == "SALES"
     headers = [str(value or "").strip().upper() for value in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
-    assert "НАИМЕНОВАНИЕ" not in headers
+    assert "НАИМЕНОВАНИЕ" in headers
     business_sku_col = headers.index("SKU") + 1
     status_col = headers.index("MATCH_STATUS") + 1
     match_sku_col = headers.index("MATCH_SKU") + 1
@@ -135,7 +142,7 @@ def test_run_sales_finalizes_result_order_by_master_and_moves_review_last(tmp_pa
     wb = load_workbook(tmp_path / "SALES_MATCH_15.07.2026.xlsx")
     ws = wb.active
     headers = [str(value or "").strip().upper() for value in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
-    assert "НАИМЕНОВАНИЕ" not in headers
+    assert "НАИМЕНОВАНИЕ" in headers
     status_col = headers.index("MATCH_STATUS") + 1
     business_sku_col = headers.index("SKU") + 1
     sku_col = headers.index("MATCH_SKU") + 1
@@ -159,3 +166,46 @@ def test_run_sales_finalizes_result_order_by_master_and_moves_review_last(tmp_pa
     assert ordered_rows[1][2] == "SKU-1"
 
     assert ordered_rows[2][0] == "REVIEW"
+
+
+def test_run_sales_preserves_source_name_for_review_rows(tmp_path: Path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "MASTER"
+    ws.append(["SKU", "Category", "Brand", "Variant", "Volume", "MASTER_NAME"])
+    ws.append(["SKU-1", "Шампунь", "SVO", "AQUA", "1 л", "Шампунь SVO AQUA 1 л"])
+    ws.append(["SKU-2", "Шампунь", "SVO", "LIME", "1 л", "Шампунь SVO LIME 1 л"])
+    master_file = tmp_path / "MASTER.xlsx"
+    wb.save(master_file)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "SALES"
+    ws.append(["НАИМЕНОВАНИЕ", "SKU", "Тип товара", "Бренд", "Variant", "Объем"])
+    source_name = "SVO SHAMPUN 1 л"
+    ws.append([source_name, None, None, None, None, None])
+    sales_file = tmp_path / "SALES_2026-07-15.xlsx"
+    wb.save(sales_file)
+
+    Engine().run_sales(
+        master_file=master_file,
+        sales_file=sales_file,
+        output_file=tmp_path / "SALES_MATCH_15.07.2026.xlsx",
+    )
+
+    wb = load_workbook(tmp_path / "SALES_MATCH_15.07.2026.xlsx", data_only=True)
+    ws = wb.active
+    headers = [str(value or "").strip().upper() for value in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
+    name_col = headers.index("НАИМЕНОВАНИЕ") + 1
+    status_col = headers.index("MATCH_STATUS") + 1
+    match_sku_col = headers.index("MATCH_SKU") + 1
+    match_master_col = headers.index("MATCH_MASTER_NAME") + 1
+    match_conf_col = headers.index("MATCH_CONFIDENCE") + 1
+    match_reasons_col = headers.index("MATCH_REASONS") + 1
+
+    assert ws.cell(row=2, column=status_col).value == "REVIEW"
+    assert ws.cell(row=2, column=name_col).value == source_name
+    assert ws.cell(row=2, column=match_sku_col).value in (None, "")
+    assert ws.cell(row=2, column=match_master_col).value in (None, "")
+    assert ws.cell(row=2, column=match_conf_col).value in (None, "")
+    assert ws.cell(row=2, column=match_reasons_col).value == "MULTIPLE_MATCH"

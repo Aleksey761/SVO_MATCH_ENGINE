@@ -128,6 +128,73 @@ def test_match_auto_assigns_when_one_candidate_crosses_threshold_and_margin():
     assert matched.review_explanation == {"confidence": 100.0, "reasons": [], "candidates": []}
 
 
+def test_match_prefers_unique_exact_triple_candidate_within_tie_range():
+    master_items = [
+        MasterItem(sku="SKU-60", category="Шампунь", brand="SVO", variant="AQUA", volume="1 л"),
+        MasterItem(sku="SKU-61", category="Шампунь", brand="OTHER", variant="LIME", volume="1 л"),
+    ]
+    matcher = Matcher(master_items, confidence_threshold=80.0, confidence_margin=5.0)
+
+    arrival = ArrivalItem(row_number=7, source_name="SVO SHAMPUN LIME 1 л")
+    arrival.category = "Шампунь"
+    arrival.brand = "SVO"
+    arrival.variant = "LIME"
+    arrival.volume = "1 л"
+
+    def fake_score_detail(_, candidate):
+        if candidate.sku == "SKU-61":
+            return {
+                "sku": candidate.sku,
+                "master_name": candidate.master_name,
+                "score": 84.0,
+                "breakdown": {
+                    "ProductType": 30.0,
+                    "Brand": 0.0,
+                    "Volume": 40.0,
+                    "Aroma": 10.0,
+                    "Color": 0.0,
+                    "Keywords": 4.0,
+                },
+                "effective_product_type": {"supplier": "ШАМПУНЬ", "master": "ШАМПУНЬ"},
+                "rejection_reason": None,
+            }
+        return {
+            "sku": candidate.sku,
+            "master_name": candidate.master_name,
+            "score": 81.0,
+            "breakdown": {
+                "ProductType": 30.0,
+                "Brand": 20.0,
+                "Volume": 40.0,
+                "Aroma": 0.0,
+                "Color": 0.0,
+                "Keywords": -9.0,
+            },
+            "effective_product_type": {"supplier": "ШАМПУНЬ", "master": "ШАМПУНЬ"},
+            "rejection_reason": None,
+        }
+
+    matcher._collect_candidates = lambda _: master_items
+    matcher._score_detail = fake_score_detail
+
+    scored = [
+        {**matcher._score_detail(arrival, master_items[1]), "candidate": master_items[1]},
+        {**matcher._score_detail(arrival, master_items[0]), "candidate": master_items[0]},
+    ]
+    scored.sort(key=lambda entry: float(entry["score"]), reverse=True)
+
+    preferred = matcher._preferred_exact_triple_candidate(arrival, scored)
+
+    assert preferred is not None
+    assert preferred["candidate"].sku == "SKU-60"
+    assert float(scored[0]["score"]) - float(preferred["score"]) <= matcher.confidence_margin
+
+    matched = matcher.match(arrival)
+
+    assert matched.status == "MATCH"
+    assert matched.sku == "SKU-60"
+
+
 def test_match_reports_missing_volume_and_unknown_brand():
     master_items = [
         MasterItem(sku="SKU-30", category="Шампунь", brand="SVO", variant="AQUA", volume="1 л"),

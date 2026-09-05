@@ -1,0 +1,8 @@
+[runner] Runtime directories ensured: output/, logs/, reports/
+[runner] Mode selected: sales
+[sales] Running SALES matching pipeline
+[sales] Rows   : 266
+[sales] MATCH  : 177
+[sales] REVIEW : 89
+[sales] OUTPUT : output\SALES_MATCH.xlsx
+[runner] Completed successfully

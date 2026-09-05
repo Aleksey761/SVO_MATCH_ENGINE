@@ -1,0 +1,55 @@
+...............................F........................................ [ 44%]
+........................................................................ [ 88%]
+...................                                                      [100%]
+================================== FAILURES ===================================
+_____________ test_dashboard_matches_real_outputs_after_full_run ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000020F4C205E00>
+
+    def test_dashboard_matches_real_outputs_after_full_run(monkeypatch):
+        workspace = Path("tests") / "integration_workspace" / "dashboard_full_pipeline"
+        if workspace.exists():
+>           shutil.rmtree(workspace)
+
+tests\test_dashboard_builder_integration.py:208: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\User\AppData\Local\Python\pythoncore-3.14-64\Lib\shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+C:\Users\User\AppData\Local\Python\pythoncore-3.14-64\Lib\shutil.py:697: in _rmtree_unsafe
+    onexc(os.rmdir, fullname, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('tests/integration_workspace/dashboard_full_pipeline')
+dir_fd = None, onexc = <function rmtree.<locals>.onexc at 0x0000020F4C5C40F0>
+
+    def _rmtree_unsafe(path, dir_fd, onexc):
+        if dir_fd is not None:
+            raise NotImplementedError("dir_fd unavailable on this platform")
+        try:
+            st = os.lstat(path)
+        except OSError as err:
+            onexc(os.lstat, path, err)
+            return
+        try:
+            if _rmtree_islink(st):
+                # symlinks to directories are forbidden, see bug #1669
+                raise OSError("Cannot call rmtree on a symbolic link")
+        except OSError as err:
+            onexc(os.path.islink, path, err)
+            # can't continue even if onexc hook returns
+            return
+        def onerror(err):
+            if not isinstance(err, FileNotFoundError):
+                onexc(os.scandir, err.filename, err)
+        results = os.walk(path, topdown=False, onerror=onerror, followlinks=os._walk_symlinks_as_files)
+        for dirpath, dirnames, filenames in results:
+            for name in dirnames:
+                fullname = os.path.join(dirpath, name)
+                try:
+>                   os.rmdir(fullname)
+E                   OSError: [WinError 145] ¦ðÿúð ýõ ÿº¸ªð: 'tests\\integration_workspace\\dashboard_full_pipeline\\output'
+
+C:\Users\User\AppData\Local\Python\pythoncore-3.14-64\Lib\shutil.py:693: OSError
+=========================== short test summary info ===========================
+FAILED tests/test_dashboard_builder_integration.py::test_dashboard_matches_real_outputs_after_full_run
+1 failed, 162 passed in 157.43s (0:02:37)

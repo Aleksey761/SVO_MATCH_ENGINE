@@ -4,23 +4,24 @@ MASTER
 Records: 292
 
 PRICE
-Matched : 35
-Review  : 133
-New SKU : 27
-
-SALES
-Matched : 96
-Review  : 170
-
-STOCK
 Matched : 0
 Review  : 0
+New SKU : 0
+
+SALES
+Matched : 133
+Review  : 0
+
+STOCK
+Matched : 133
+Review  : 0
+Out of scope : 14
 
 Price changes
-Increased : 4
+Increased : 0
 Decreased : 0
 
 Execution time
-99 sec
+24 sec
 
 ====================================

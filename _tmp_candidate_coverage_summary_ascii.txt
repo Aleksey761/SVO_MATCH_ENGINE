@@ -1,0 +1,7 @@
+Rows analyzed: 38
+Matching MASTER exists: 0
+Matching MASTER absent: 38
+Lost before candidate generation: 0
+Lost during candidate generation: 0
+Lost after candidate generation: 0
+Estimated recoverable rows by improving candidate generation: 0

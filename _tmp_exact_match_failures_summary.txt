@@ -1,0 +1,10 @@
+Rows analyzed: 15
+LOW_SCORE: 6
+PRICE_CONFLICT: 0
+MULTIPLE_MATCH: 9
+PRODUCT_TYPE: 0
+BRAND: 0
+Other: 0
+Recoverable without MASTER changes: 15
+Recoverable after scoring change: 15
+Recoverable after rule change: 0

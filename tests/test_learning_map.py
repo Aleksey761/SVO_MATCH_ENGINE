@@ -1,10 +1,16 @@
 from pathlib import Path
 from decimal import Decimal
 
+import pytest
 from openpyxl import Workbook
 
 from svo.engine import Engine
 from svo.matcher import Matcher
+
+
+@pytest.fixture(autouse=True)
+def _isolate_output_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(tmp_path)
 
 
 def _create_master(path: Path, rows: list[list[object]]) -> Path:
