@@ -64,6 +64,42 @@ class Loader:
     ) -> tuple[Path, Path, Path | None, str | None, str | None]:
         root = Path(input_dir)
         workbooks = [p for p in root.glob("*.xlsx") if p.is_file()]
+<<<<<<< ours
+=======
+
+        # MASTER is canonical. Prefer the synchronized/current MASTER when it
+        # is present, then the current dataset name, then the legacy MASTER.
+        # The synchronized file may be kept in output/ so users do not need to
+        # rename or manually replace the legacy workbook in data/.
+        preferred_master_names = (
+            "MASTER_DATASET_SYNCHRONIZED.xlsx",
+            "MASTER_DATASET.xlsx",
+            "MASTER.xlsx",
+        )
+        search_roots = [root]
+        output_dir = root.parent / "output"
+        if output_dir.is_dir():
+            search_roots.append(output_dir)
+
+        master_file = None
+        for preferred_name in preferred_master_names:
+            for candidate_root in search_roots:
+                candidate = candidate_root / preferred_name
+                if candidate.is_file():
+                    master_file = candidate
+                    break
+            if master_file is not None:
+                break
+
+        if master_file is None:
+            master_candidates = [p for p in workbooks if "master" in p.stem.lower()]
+            if len(master_candidates) != 1:
+                raise ValueError(
+                    f"Expected exactly one MASTER workbook in {root}, found {len(master_candidates)}"
+                )
+            master_file = master_candidates[0]
+
+>>>>>>> theirs
         arrival_candidates = [p for p in workbooks if "arrival" in p.stem.lower()]
 
         if len(arrival_candidates) != 1:
@@ -82,6 +118,10 @@ class Loader:
         if require_sales and len(sales_candidates) == 0:
             raise ValueError(f"SALES workbook is missing in {root}")
 
+<<<<<<< ours
+=======
+        arrival_file = arrival_candidates[0]
+>>>>>>> theirs
         sales_file = sales_candidates[0] if sales_candidates else None
         arrival_date = self.parse_arrival_date_from_filename(arrival_file.name)
         sales_date = self.parse_arrival_date_from_filename(sales_file.name) if sales_file else None
@@ -89,6 +129,7 @@ class Loader:
             print("WARNING:")
             print("Arrival date not found in filename.")
 
+        print(f"MASTER selected: {master_file}")
         return master_file, arrival_file, sales_file, arrival_date, sales_date
 
     def load_master(self, filename: str | Path) -> List[MasterItem]:
