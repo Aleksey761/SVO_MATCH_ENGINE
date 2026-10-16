@@ -479,6 +479,12 @@ class Normalizer:
         if category != "Порошок стиральный":
             return aroma
 
+        source_lower = source_text.lower().replace("ё", "е")
+        if "ромашка" in source_lower:
+            return "PAPATYE"
+        if "весенний бриз" in source_lower:
+            return "SPRING FRESH"
+
         token_set = set(tokens)
         has_specific_variant = "BABY" in token_set or ("PASSION" in token_set and "FRUIT" in token_set)
         if "COLOR" in token_set and has_specific_variant:
