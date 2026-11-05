@@ -57,6 +57,25 @@ class Loader:
 
         return None
 
+    # Filenames that mark a workbook as something other than SALES even
+    # though it is neither MASTER nor ARRIVAL (price lists, inventory
+    # audits, alternate MASTER copies, learning-map artefacts). Kept as a
+    # narrow, filename-only heuristic so it never depends on opening or
+    # parsing workbook contents.
+    _NON_SALES_KEYWORDS = (
+        "master",
+        "prc",
+        "прайс",
+        "price",
+        "инвентар",
+        "learning_map",
+    )
+
+    @classmethod
+    def _looks_like_non_sales_workbook(cls, path: Path) -> bool:
+        stem = path.stem.lower()
+        return any(keyword in stem for keyword in cls._NON_SALES_KEYWORDS)
+
     def discover_workbooks(
         self,
         input_dir: str | Path,
@@ -74,7 +93,9 @@ class Loader:
         sales_candidates = [
             p
             for p in workbooks
-            if p.resolve() != master_file.resolve() and p.resolve() != arrival_file.resolve()
+            if p.resolve() != master_file.resolve()
+            and p.resolve() != arrival_file.resolve()
+            and not self._looks_like_non_sales_workbook(p)
         ]
 
         if len(sales_candidates) > 1:

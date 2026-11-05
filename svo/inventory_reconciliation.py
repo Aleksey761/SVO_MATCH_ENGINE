@@ -270,11 +270,7 @@ class InventoryReconciliation:
             "master_file": str(master_file),
             "result_file": str(result_file),
             "inventory_file": str(inventory_file),
-            "matched_rows": sum(
-                1 for row in result_rows
-                if str(row.get("status", "")).strip().upper() == "MATCH"
-                and str(row.get("sku", "")).strip()
-            ),
+            "matched_rows": len(stock_rows),
             "stock_rows_created": len(stock_rows),
             "variance_rows": len(variance_rows),
             "unmatched_rows": unmatched_rows,

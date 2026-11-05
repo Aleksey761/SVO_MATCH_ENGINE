@@ -38,7 +38,6 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--price", help="Path to PRICE workbook")
     parser.add_argument("--sales", help="Path to SALES workbook or RESULT workbook (inventory mode)")
     parser.add_argument("--inventory", help="Path to inventory revision workbook")
-    parser.add_argument("--stock-match", help="Path to STOCK_MATCH workbook (finance mode)")
     parser.add_argument("--output", help="Path to output workbook where supported")
     parser.add_argument(
         "--auto-resolve-multiple-candidates",
@@ -450,47 +449,9 @@ def _load_inventory_stock_by_sku_exact_alias(
     return stock_by_sku, applied_alias_rows
 
 
-def _load_stock_match_by_sku(stock_match_file: Path | None) -> dict[str, int]:
-    if stock_match_file is None or not stock_match_file.exists():
-        raise FileNotFoundError(
-            "STOCK_MATCH workbook not found: "
-            f"{stock_match_file}. Build it first via '--mode inventory' or '--mode full'."
-        )
-
-    wb = load_workbook(filename=stock_match_file, data_only=True)
-    ws = wb["STOCK_RESULT"] if "STOCK_RESULT" in wb.sheetnames else wb.active
-
-    headers = [_normalize_header(ws.cell(row=1, column=col).value) for col in range(1, ws.max_column + 1)]
-    idx = {name: pos + 1 for pos, name in enumerate(headers) if name}
-
-    sku_col = idx.get("SKU")
-    stock_col = idx.get("ФАКТИЧЕСКИЙ ОСТАТОК")
-    if sku_col is None:
-        raise ValueError(
-            "STOCK_MATCH.xlsx: column 'SKU' not found in STOCK_RESULT"
-        )
-
-    if stock_col is None:
-        raise ValueError(
-            "STOCK_MATCH.xlsx: column 'ФАКТИЧЕСКИЙ ОСТАТОК' not found in STOCK_RESULT"
-        )
-
-    stock_by_sku: dict[str, int] = {}
-    for row in range(2, ws.max_row + 1):
-        sku = str(ws.cell(row=row, column=sku_col).value or "").strip()
-        if not sku:
-            continue
-        stock_qty = _to_int_or_zero(ws.cell(row=row, column=stock_col).value)
-        stock_by_sku[sku] = stock_qty
-
-    return stock_by_sku
-
-
 def _execute_finance_pipeline(args: argparse.Namespace) -> dict:
     master_file = _ensure_file(args.master, name="master")
     output_file = Path(args.output) if args.output else Path("output") / "FINANCE_RESULT.xlsx"
-    stock_match_arg = getattr(args, "stock_match", None)
-    stock_match_file = Path(stock_match_arg) if stock_match_arg else Path("output") / "STOCK_MATCH.xlsx"
 
     price_match_file = Path(args.price) if args.price else Path("output") / "price_match.xlsx"
     if not price_match_file.exists():
@@ -513,19 +474,21 @@ def _execute_finance_pipeline(args: argparse.Namespace) -> dict:
             inventory_file = data_candidates[0]
 
     bridge_file = Path("output") / "_FULL_RESULT_FOR_STOCK.xlsx"
+    inventory_alias_map_file = Path("output") / "INVENTORY_ALIAS_MAP.xlsx"
     price_rows = [row for row in _load_price_match_rows(price_match_file) if row["Status"] == "MATCH"]
     master_items = Loader().load_master(master_file)
     master_by_sku = {str(item.sku or "").strip(): item for item in master_items if str(item.sku or "").strip()}
     correction_layer = NameCorrectionLayer(master_items)
 
     sales_qty_by_sku = _load_sales_qty_by_sku(sales_file)
-    if stock_match_arg is None and not stock_match_file.exists():
-        stock_by_sku = {}
-    else:
-        stock_by_sku = _load_stock_match_by_sku(stock_match_file)
     source_to_skus = _load_source_to_skus_map_with_correction(
         bridge_file,
         correction_layer=correction_layer,
+    )
+    alias_by_inventory_name = _load_inventory_alias_map(inventory_alias_map_file)
+    alias_stock_by_sku, alias_applied_rows = _load_inventory_stock_by_sku_exact_alias(
+        inventory_file,
+        alias_by_inventory_name=alias_by_inventory_name,
     )
     shipped_by_sku, ambiguous_fallback_rows, inventory_parse_warning = _load_shipped_by_sku(
         inventory_file,
@@ -550,7 +513,7 @@ def _execute_finance_pipeline(args: argparse.Namespace) -> dict:
         master_name = str(row["MASTER_NAME"] or "").strip() or (master_item.master_name if master_item is not None else "")
         unit_cost = _to_decimal_or_none(row["UnitCost"])
         retail_price = _to_decimal_or_none(row["RetailPrice"])
-        stock_qty = int(stock_by_sku.get(sku, 0))
+        stock_qty = int(alias_stock_by_sku.get(sku, _to_int_or_zero(row["StockQty"])))
         sales_qty = int(sales_qty_by_sku.get(sku, 0))
         shipped_qty = int(shipped_by_sku.get(sku, 0))
 
@@ -648,9 +611,9 @@ def _execute_finance_pipeline(args: argparse.Namespace) -> dict:
     ws_lineage.append(["MarginPct", "computed", "FinanceCalculator", "(gross_profit / revenue) * 100; revenue=0 => 0"])
     ws_lineage.append([
         "StockQty",
-        str(stock_match_file),
-        "STOCK_MATCH",
-        "Fact stock by SKU from STOCK_MATCH.xlsx (STOCK_RESULT: SKU + Фактический остаток)",
+        str(inventory_alias_map_file) if alias_by_inventory_name else str(price_match_file),
+        "INVENTORY_ALIAS_MAP/PRICE_MATCH",
+        "Exact InventoryName alias map to SKU uses inventory column 15 when alias exists; otherwise StockQty from matched PRICE",
     ])
     ws_lineage.append(["StockValue", "computed", "FinanceCalculator", "stock_qty * unit_cost"])
     ws_lineage.append(["Отгружено", str(inventory_file) if inventory_file else "N/A", "InventoryInputReader", "supplier_return - sales, SKU-first mapping with deterministic fallback"])
@@ -670,7 +633,7 @@ def _execute_finance_pipeline(args: argparse.Namespace) -> dict:
     ws_lineage.append(["Finance-incomplete SKU", total_sku - complete])
     ws_lineage.append(["Missing MASTER for PRICE SKU", missing_master])
     ws_lineage.append(["Ambiguous inventory fallback rows", ambiguous_fallback_rows])
-    ws_lineage.append(["Stock rows loaded from STOCK_MATCH", len(stock_by_sku)])
+    ws_lineage.append(["Inventory alias rows applied", alias_applied_rows])
 
     output_file.parent.mkdir(parents=True, exist_ok=True)
     wb.save(output_file)
@@ -682,7 +645,7 @@ def _execute_finance_pipeline(args: argparse.Namespace) -> dict:
     print(f"[finance] With cost   : {with_cost}")
     print(f"[finance] With stock  : {with_stock}")
     print(f"[finance] Incomplete  : {total_sku - complete}")
-    print(f"[finance] STOCK rows  : {len(stock_by_sku)}")
+    print(f"[finance] Alias rows  : {alias_applied_rows}")
     if inventory_parse_warning:
         print(f"[finance] Inventory warning: {inventory_parse_warning}")
 
@@ -702,9 +665,8 @@ def _execute_finance_pipeline(args: argparse.Namespace) -> dict:
         "price_match_file": str(price_match_file),
         "sales_file": str(sales_file) if sales_file else None,
         "inventory_file": str(inventory_file) if inventory_file else None,
-        "stock_match_file": str(stock_match_file),
         "inventory_parse_warning": inventory_parse_warning,
-        "stock_rows_loaded": len(stock_by_sku),
+        "inventory_alias_rows_applied": alias_applied_rows,
     }
 
 
