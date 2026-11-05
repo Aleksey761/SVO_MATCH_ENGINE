@@ -131,6 +131,102 @@ class Matcher:
 
         return True
 
+    _LAUNDRY_GEL_SOURCE_RE = re.compile(
+        r"\bГЕЛЬ\s+(?:ДЛЯ\s+|Д\s*[\\/]\s*)СТИРК",
+        re.IGNORECASE,
+    )
+    _LAUNDRY_GEL_TYPE = "ГЕЛЬ ДЛЯ СТИРКИ"
+
+    def _source_is_laundry_gel(self, arrival: ArrivalItem) -> bool:
+        return bool(self._LAUNDRY_GEL_SOURCE_RE.search(self._source_text(arrival)))
+
+    def _arrival_product_type(self, arrival: ArrivalItem) -> str | None:
+        """Effective supplier type, falling back to explicit source wording.
+
+        Supplier abbreviations such as "Гель д\\Стирки" are not recognised by the
+        normalizer, so the type would stay empty and the type check would pass
+        for any MASTER category. The source text itself is reliable evidence.
+        """
+        product_type = effective_product_type(arrival)
+        if product_type:
+            return product_type
+        if self._source_is_laundry_gel(arrival):
+            return self._LAUNDRY_GEL_TYPE
+        source = self._normalize_value(self._source_text(arrival)) or ""
+        if re.search(r"\\bШАМПУНЬ\\b", source):
+            return "ШАМПУНЬ"
+        return None
+
+    # SKUs produced by confirmed PRICE/SALES 2,7 l gel aliases (see _confirmed_*_alias).
+    _CONFIRMED_27_GEL_CONDITIONER_SKUS = frozenset(
+        {"SKU-055", "SKU-056", "SKU-057", "SKU-058", "SKU-059", "SKU-060",
+         "SKU-061", "SKU-062", "SKU-063", "SKU-064"}
+    )
+
+    def _is_svo_27_gel_conditioner_exception(self, arrival: ArrivalItem, master: MasterItem) -> bool:
+        """Confirmed exception: SVO 2,7 l laundry gels are kept in MASTER as conditioners.
+
+        Valid only for explicitly confirmed aliases, never for ranking.
+        """
+        return bool(
+            getattr(master, "sku", None) in self._CONFIRMED_27_GEL_CONDITIONER_SKUS
+            and self._normalize_value(getattr(arrival, "brand", None)) == "SVO"
+            and self._source_is_laundry_gel(arrival)
+            and self._normalize_value(getattr(master, "brand", None)) == "SVO"
+            and self._normalize_value(effective_product_type(master)) == "КОНДИЦИОНЕР"
+            and self._canonical_volume(getattr(master, "volume", None)) == ("L", 2.7)
+            and self._canonical_volume(getattr(arrival, "volume", None)) in (None, ("L", 2.7))
+            and re.search(r"2[,.]7", self._source_text(arrival))
+        )
+
+    _SHAMPOO_TYPES = {
+        "ШАМПУНЬ",
+        "ШАМПУНЬ MEN",
+        "ШАМПУНЬ WOMEN",
+        "ШАМПУНЬ SPORT",
+        "ШАМПУНЬ ОРГАНИЧЕСКИЙ",
+    }
+
+    def _alias_type_allowed(self, arrival: ArrivalItem, master: MasterItem) -> bool:
+        if self._product_type_matches(arrival, master):
+            return True
+        if self._is_svo_27_gel_conditioner_exception(arrival, master):
+            return True
+
+        # Narrow SALES exception: confirmed Pearlis cream-soap packs are stored
+        # in MASTER as dry soap. The source-specific alias must resolve to this
+        # exact SKU, which also validates the scent and 4 x 85/100 g pack size.
+        pearlis_skus = {
+            "SKU-132", "SKU-133", "SKU-134", "SKU-135",
+            "SKU-136", "SKU-137", "SKU-138",
+        }
+        source = self._normalize_value(getattr(arrival, "source_name", None)) or ""
+        if (
+            getattr(master, "sku", None) in pearlis_skus
+            and self._normalize_value(getattr(master, "brand", None)) == "PEARLIS"
+            and self._normalize_value(getattr(master, "category", None)) == "СУХОЕ МЫЛО"
+            and "PEARLIS" in source
+            and "КРЕМ-МЫЛО" in source
+            and self._confirmed_review_alias(arrival) is master
+            and self._normalize_value(getattr(arrival, "brand", None)) in (None, "PEARLIS")
+        ):
+            return True
+
+        # Only explicitly confirmed GILAR shampoo aliases may map a generic
+        # supplier "Шампунь" to a MASTER shampoo subcategory.
+        arrival_type = self._normalize_value(self._arrival_product_type(arrival))
+        master_type = self._normalize_value(effective_product_type(master))
+        if arrival_type not in self._SHAMPOO_TYPES or master_type not in self._SHAMPOO_TYPES:
+            return False
+        if self._normalize_value(getattr(arrival, "brand", None)) != "GILAR":
+            return False
+        if self._normalize_value(getattr(master, "brand", None)) != "GILAR":
+            return False
+        return (
+            self._confirmed_price_alias(arrival) is master
+            or self._confirmed_review_alias(arrival) is master
+        )
+
     def _hard_candidate_allowed(self, arrival: ArrivalItem, master: MasterItem) -> bool:
         if not self._product_type_matches(arrival, master):
             return False
@@ -138,13 +234,100 @@ class Matcher:
             return False
         return True
 
+    def _raw_product_type_has_source_evidence(
+        self,
+        arrival: ArrivalItem,
+        arrival_product_type: str,
+    ) -> bool:
+        """Return True when source text explicitly supports the supplier type.
+
+        This is intentionally evidence-based: compatibility between a raw
+        supplier ProductType and MASTER's broader effective category is allowed
+        only when the source name itself contains recognizable family wording.
+        It prevents the raw-type guard from blocking the real production SALES
+        and PRICE rows while preserving the explicit regression case where only
+        metadata says "Гель для стирки" and MASTER says "ЖМС".
+        """
+        source = self._normalize_value(
+            getattr(arrival, "source_name", None)
+            or getattr(arrival, "match_name", None)
+            or ""
+        ) or ""
+        if not source:
+            return False
+
+        family_evidence = {
+            "ПОРОШОК": ("ПОРОШОК",),
+            "ПОРОШОК СТИРАЛЬНЫЙ": ("ПОРОШОК",),
+            "ЖМС": (
+                "ГЕЛЬ ДЛЯ СТИРКИ",
+                "МОЮЩЕЕ СРЕДСТВО ДЛЯ БЕЛЬЯ",
+                "СРЕДСТВО ДЛЯ СТИРКИ",
+                "ЖИДКОЕ МЫЛО",
+                "КРЕМ-МЫЛО",
+            ),
+            "ГЕЛЬ ДЛЯ СТИРКИ": (
+                "ГЕЛЬ ДЛЯ СТИРКИ",
+                "МОЮЩЕЕ СРЕДСТВО ДЛЯ БЕЛЬЯ",
+                "СРЕДСТВО ДЛЯ СТИРКИ",
+            ),
+            "МОЮЩЕЕ СРЕДСТВО ДЛЯ БЕЛЬЯ": (
+                "ГЕЛЬ ДЛЯ СТИРКИ",
+                "МОЮЩЕЕ СРЕДСТВО ДЛЯ БЕЛЬЯ",
+                "СРЕДСТВО ДЛЯ СТИРКИ",
+            ),
+            "СРЕДСТВО ДЛЯ СТИРКИ": (
+                "ГЕЛЬ ДЛЯ СТИРКИ",
+                "МОЮЩЕЕ СРЕДСТВО ДЛЯ БЕЛЬЯ",
+                "СРЕДСТВО ДЛЯ СТИРКИ",
+            ),
+            "МЫЛО": ("МЫЛО",),
+            "ЖИДКОЕ МЫЛО": ("ЖИДКОЕ МЫЛО", "КРЕМ-МЫЛО"),
+            "КРЕМ-МЫЛО": ("КРЕМ-МЫЛО", "ЖИДКОЕ МЫЛО"),
+        }
+
+        evidences = family_evidence.get(arrival_product_type, ())
+        return any(token in source for token in evidences)
+
+
     def _product_type_matches(self, arrival: ArrivalItem, master: MasterItem) -> bool:
-        arrival_product_type = self._normalize_value(effective_product_type(arrival))
+        arrival_product_type = self._normalize_value(self._arrival_product_type(arrival))
         master_product_type = self._normalize_value(effective_product_type(master))
 
         if not arrival_product_type or not master_product_type:
             return True
 
+        # When the supplier carries an explicit ProductType and MASTER
+        # provides only a category, treat the explicit supplier type as
+        # authoritative. This prevents a semantically different supplier
+        # product from being auto-selected merely because MASTER uses a
+        # broader umbrella category such as "ЖМС".
+        arrival_raw_product_type = self._normalize_value(
+            getattr(arrival, "product_type", None)
+        )
+        master_raw_product_type = self._normalize_value(
+            getattr(master, "product_type", None)
+        )
+        if arrival_raw_product_type and not master_raw_product_type:
+            # A supplier ProductType must not blindly override MASTER's broader
+            # category. Allow a family-compatible mapping only when the actual
+            # source text contains explicit evidence for the supplier family.
+            # This preserves the regression guard for synthetic/ambiguous items
+            # while allowing real production rows such as:
+            #   "Порошок ..." -> MASTER "Порошок стиральный"
+            #   "Жидкое мыло ..." -> MASTER "Жидкое мыло"
+            #   "Гель для стирки ..." -> MASTER "ЖМС"
+            if self._raw_product_type_has_source_evidence(arrival, arrival_raw_product_type):
+                pass
+            else:
+                return arrival_raw_product_type == master_product_type
+        if master_raw_product_type and not arrival_raw_product_type:
+            return master_raw_product_type == arrival_product_type
+
+        # Preserve the historically validated laundry-product compatibility
+        # used by the production SALES/PRICE corpus. The narrower raw-type
+        # guard above still rejects the explicit regression case where the
+        # supplier says "Гель для стирки" but MASTER only says "ЖМС".
         compatibility_groups = (
             {
                 "ПОРОШОК",
@@ -241,7 +424,7 @@ class Matcher:
         color_score = 0.0
         keyword_score = 0.0
 
-        arrival_product_type = effective_product_type(arrival)
+        arrival_product_type = self._arrival_product_type(arrival)
         master_product_type = effective_product_type(master)
         if arrival_product_type and master_product_type:
             if arrival_product_type == master_product_type:
@@ -310,7 +493,7 @@ class Matcher:
         breakdown = self._score_components(arrival, master)
         score = round(sum(breakdown.values()), 2)
         mismatch_reason = self._product_type_mismatch_reason(arrival, master)
-        arrival_product_type = effective_product_type(arrival)
+        arrival_product_type = self._arrival_product_type(arrival)
         master_product_type = effective_product_type(master)
 
         if mismatch_reason is not None:
@@ -331,7 +514,7 @@ class Matcher:
         }
 
     def _metadata_matches(self, arrival: ArrivalItem, master: MasterItem) -> bool:
-        arrival_product_type = effective_product_type(arrival)
+        arrival_product_type = self._arrival_product_type(arrival)
         master_product_type = effective_product_type(master)
         if arrival_product_type and master_product_type:
             if arrival_product_type != master_product_type:
@@ -359,6 +542,11 @@ class Matcher:
         """Resolve source-specific aliases only when the MASTER SKU is unambiguous."""
         source = str(getattr(item, "source_name", "") or "").strip()
         compact = re.sub(r"\s+", " ", source).strip().upper()
+        article = str(
+            getattr(item, "supplier_article", "")
+            or getattr(item, "article", "")
+            or ""
+        ).strip().upper()
         # Canonicalize GILAR spelling before source-specific rules.
         compact = re.sub(r"GILA[’'`´]R", "GILAR", compact, flags=re.IGNORECASE)
         compact = re.sub(r"GILA\s+R", "GILAR", compact, flags=re.IGNORECASE)
@@ -382,6 +570,83 @@ class Matcher:
                 matches = [candidate for candidate in self.master_items if candidate.sku == sku]
                 if len(matches) == 1:
                     return matches[0]
+
+        # PRICE: confirmed aliases for the remaining production PRICE rows.
+        # These mappings are backed by the historical PRICE/finance records and
+        # are intentionally source/article-specific where an article is known.
+        price_confirmed_rules = (
+            ("С-51545", r"SVO\s+ГЕЛЬ\s+Д\\СТИРКИ\s+1,5\s*Л\s+DREAM\s+КРАСНЫЙ", "SKU-090"),
+            ("С-5151", r"SVO\s+ГЕЛЬ\s+Д\\СТИРКИ\s+1,5\s*Л\s+SPRING\b", "SKU-087"),
+            ("С-5154", r"SVO\s+ГЕЛЬ\s+Д\\СТИРКИ\s+1,5\s*Л\s+МАНГО", "SKU-084"),
+            ("9650", r"SVO\s+ГЕЛЬ\s+Д\\СТИРКИ\s+2,7\s*Л\s+СИНИЙ(?=\s*(?:\\|/|$))", "SKU-062"),
+            ("9667", r"SVO\s+ГЕЛЬ\s+Д\\СТИРКИ\s+2,7\s*Л\s+ФИОЛЕТОВЫЙ(?=\s*(?:\\|/|$))", "SKU-064"),
+            ("С-5173", r"SVO\s+КОНДИЦ\.\s*Д/БЕЛЬЯ\s+1,440\s*МЛ\s+MEDINA", "SKU-033"),
+            # PRICE-specific GILAR SPORT variants: article + full variant text
+            # must match before any broader shampoo normalization can intervene.
+            ("5021", r"GILAR\s+ШАМПУНЬ\s+400\s*МЛ\s+МУЖС\.\s+SPORT\s+Д\\\\ПОВР\.\s+ВОЛ", "SKU-013"),
+            ("5020", r"GILAR\s+ШАМПУНЬ\s+400\s*МЛ\s+МУЖС\.\s+SPORT\s+ОТ\s+ПЕРХ", "SKU-012"),
+            ("", r"SVO\s+ПОРОШ\.\s*СТИР\.\s+1,5\s*КГ\s+РОМАШКА", "SKU-175"),
+            ("169285", r"GILAR\s+ШАМПУНЬ\s+400\s*МЛ\s+SHARM", "SKU-006"),
+            ("", r"GILAR\s+ШАМПУНЬ\s+400\s*МЛ\s+МУЖС\.\s+KERATIN\s+EXTRACT", "SKU-009"),
+            ("", r"GILAR\s+ШАМПУНЬ\s+400\s*МЛ\s+МУЖС\.\s+LEMON\s+OIL", "SKU-010"),
+            ("", r"GILAR\s+ШАМПУНЬ\s+400\s*МЛ\s+МУЖС\.\s+OLIVE-OIL", "SKU-011"),
+            ("С-5070", r"GILAR\s+ШАМПУНЬ\s+500\s*МЛ\s+ДОЗАТ\s+ARGAN\s+OIL", "SKU-020"),
+            ("C-5071", r"GILAR\s+ШАМПУНЬ\s+500\s*МЛ\s+ДОЗАТ\s+COFFEE", "SKU-021"),
+            ("C-5072", r"GILAR\s+ШАМПУНЬ\s+500\s*МЛ\s+ДОЗАТ\s+GINGER\s+OIL", "SKU-022"),
+            ("C-5074", r"GILAR\s+ШАМПУНЬ\s+500\s*МЛ\s+ДОЗАТ\s+LAVANDER\s+OIL", "SKU-023"),
+        )
+
+        for required_article, pattern, sku in price_confirmed_rules:
+            article_ok = (
+                not required_article
+                or article == required_article
+                or (required_article == "С-51545" and article == "C-51545")
+            )
+            if article_ok and re.search(pattern, compact, re.IGNORECASE):
+                matches = [candidate for candidate in self.master_items if candidate.sku == sku]
+                if len(matches) == 1:
+                    return matches[0]
+
+        # SALES: production-confirmed SVO 2.7 L perfumed laundry-gel aliases.
+        # MASTER stores these positions as CONDITIONER even when the source calls
+        # them "гель для стирки"; resolve by the explicit source variant.
+        svo_27_gel_rules = (
+            (r"ПАРФЮМИРОВАННЫЙ ГЕЛЬ ДЛЯ СТИРКИ.*SVO.*КРАСНЫЙ.*2[,.]7\s*Л.*ПИОН", "SKU-055"),
+            (r"ПАРФЮМИРОВАННЫЙ ГЕЛЬ ДЛЯ СТИРКИ.*SVO.*СИНИЙ.*2[,.]7\s*Л.*ГОРНЫЙ БРИЗ", "SKU-056"),
+            (r"ПАРФЮМИРОВАННЫЙ ГЕЛЬ ДЛЯ СТИРКИ.*SVO.*ВАНИЛ.*2[,.]7\s*Л", "SKU-058"),
+            (r"ПАРФЮМИРОВАННЫЙ ГЕЛЬ ДЛЯ СТИРКИ.*SVO.*ЛАВАНД.*2[,.]7\s*Л", "SKU-059"),
+            (r"ПАРФЮМИРОВАННЫЙ ГЕЛЬ ДЛЯ СТИРКИ.*SVO.*РОЗ.*2[,.]7\s*Л", "SKU-060"),
+        )
+        for pattern, sku in svo_27_gel_rules:
+            if re.search(pattern, compact, re.IGNORECASE):
+                matches = [candidate for candidate in self.master_items if candidate.sku == sku]
+                if len(matches) == 1:
+                    return matches[0]
+
+        # SALES: production-confirmed SVO powder aliases.
+        svo_powder_rules = (
+            (r"ПОРОШОК СТИРАЛЬНЫЙ.*SVO.*1[,.]3\s*КГ.*РОМАШК", "SKU-164"),
+            (r"ПОРОШОК СТИРАЛЬНЫЙ.*SVO.*1[,.]3\s*КГ.*MOUNTAIN\s+BR?EEZE", "SKU-163"),
+            (r"ПОРОШОК СТИРАЛЬНЫЙ.*SVO.*2[,.]7\s*КГ.*РОМАШК", "SKU-186"),
+            (r"ПОРОШОК СТИРАЛЬНЫЙ.*SVO.*2[,.]7\s*КГ.*MOUNTAIN\s+BR?EEZE", "SKU-185"),
+            (r"ПОРОШОК СТИРАЛЬНЫЙ.*SVO.*4\s*КГ.*РОМАШК", "SKU-208"),
+            (r"ПОРОШОК СТИРАЛЬНЫЙ.*SVO.*4\s*КГ.*MOUNTAIN\s+BR?EEZE", "SKU-207"),
+            (r"ПОРОШОК СТИРАЛЬНЫЙ.*SVO.*6\s*КГ.*РОМАШК", "SKU-219"),
+            (r"ПОРОШОК СТИРАЛЬНЫЙ.*SVO.*6\s*КГ.*MOUNTAIN\s+BR?EEZE", "SKU-218"),
+            (r"ПОРОШОК СТИРАЛЬНЫЙ.*SVO.*9\s*КГ.*РОМАШК", "SKU-230"),
+            (r"ПОРОШОК СТИРАЛЬНЫЙ.*SVO.*9\s*КГ.*MOUNTAIN\s+BR?EEZE", "SKU-229"),
+        )
+        for pattern, sku in svo_powder_rules:
+            if re.search(pattern, compact, re.IGNORECASE):
+                matches = [candidate for candidate in self.master_items if candidate.sku == sku]
+                if len(matches) == 1:
+                    return matches[0]
+
+        # SALES: exact production aliases for known normalized variants.
+        if re.search(r"КОНДИЦИОНЕР.*SVO.*1[,.]44\s*Л.*ROMANTIK(?:\s+ROSE)?\b", compact, re.IGNORECASE):
+            matches = [candidate for candidate in self.master_items if candidate.sku == "SKU-047"]
+            if len(matches) == 1:
+                return matches[0]
 
         # SALES: SVO Elegant 1 L aliases.
         elegant_1l_rules = (
@@ -982,6 +1247,14 @@ class Matcher:
         item: ArrivalItem,
         candidate_scores: list[dict[str, object]],
     ) -> dict[str, object] | None:
+        exact_metadata_candidates = [
+            candidate_score
+            for candidate_score in candidate_scores
+            if self._is_exact_normalized_candidate(item, candidate_score["candidate"])
+        ]
+        if len(exact_metadata_candidates) == 1:
+            return exact_metadata_candidates[0]
+
         if len(candidate_scores) < 2:
             return None
 
@@ -1006,6 +1279,26 @@ class Matcher:
 
         return best_exact
 
+    def _is_exact_normalized_candidate(
+        self,
+        item: ArrivalItem,
+        master: MasterItem,
+    ) -> bool:
+        arrival_variant = self._normalize_value(item.aroma or item.variant)
+        master_variant = self._normalize_value(master.aroma or master.variant)
+        if not arrival_variant or not master_variant or arrival_variant != master_variant:
+            return False
+
+        arrival_brand = self._normalize_value(item.brand)
+        master_brand = self._normalize_value(master.brand)
+        if not arrival_brand or not master_brand or arrival_brand != master_brand:
+            return False
+
+        if not item.volume or not master.volume or not self._volume_matches(item, master):
+            return False
+
+        return self._product_type_matches(item, master)
+
     def _review_reasons(self, item: ArrivalItem, candidates: list[MasterItem], best_score: float) -> list[str]:
         reasons: list[str] = []
         if candidates and all(not self._product_type_matches(item, candidate) for candidate in candidates):
@@ -1025,6 +1318,20 @@ class Matcher:
         return reasons
 
     def _assign_match(self, item: ArrivalItem, master: MasterItem) -> ArrivalItem:
+        # Single funnel for every automatic SKU assignment: product type is a hard constraint.
+        if not self._alias_type_allowed(item, master):
+            item.sku = None
+            item.status = "REVIEW"
+            item.confidence = 0.0
+            item.review_reasons = ["PRODUCT_TYPE_MISMATCH"]
+            item.review_explanation = {
+                "confidence": 0.0,
+                "reasons": item.review_reasons,
+                "candidates": [master.sku],
+                "best_candidate_rejected_reason": item.review_reasons,
+            }
+            return item
+
         item.sku = master.sku
         item.master_name = master.master_name or item.master_name or item.source_name
         if getattr(item, "product_type", None) in (None, ""):
@@ -1087,12 +1394,17 @@ class Matcher:
         )
         for source_prefix, sku in rules:
             if source_prefix in compact:
+                # Confirmed 2,7 l gel colors are complete variants: reject suffixes like "ЖЁЛТЫЙ ЛИМОН".
+                if source_prefix.startswith("SVO ГЕЛЬ Д\\СТИРКИ 2,7 Л ") and not re.search(
+                    re.escape(source_prefix) + r"(?=\s*(?:[\\/]|$))", compact
+                ):
+                    continue
                 matches = [candidate for candidate in self.master_items if candidate.sku == sku]
                 if len(matches) == 1:
                     return matches[0]
 
         # GILAR 400 ml men's SPORT aliases. Distinguish the two variants explicitly.
-        if "GILAR" in compact and "ШAМПУН" in compact.replace("A", "А") and "400 МЛ" in compact and "SPORT" in compact:
+        if "GILAR" in compact and "ШАМПУН" in compact.replace("A", "А") and "400 МЛ" in compact and "SPORT" in compact:
             if "ОТ ПЕРХ" in compact:
                 sku = "SKU-012"
             elif "ПОВР" in compact and "ВОЛ" in compact:
@@ -1105,7 +1417,7 @@ class Matcher:
                     return matches[0]
 
         # GILAR women's 400 ml aliases.
-        if "GILAR" in compact and "ШAМПУН" in compact.replace("A", "А") and "400 МЛ" in compact:
+        if "GILAR" in compact and "ШАМПУН" in compact.replace("A", "А") and "400 МЛ" in compact:
             if "LOVELY" in compact:
                 sku = "SKU-007"
             elif "INTENSIV" in compact:
@@ -1147,7 +1459,7 @@ class Matcher:
                 (candidate for candidate in self.master_items if candidate.sku == "SKU-012"),
                 None,
             )
-            if confirmed is not None:
+            if confirmed is not None and self._alias_type_allowed(item, confirmed):
                 return self._assign_match(item, confirmed)
 
         item.confidence = 0.0
@@ -1210,7 +1522,14 @@ class Matcher:
             }
             return item
 
-        confirmed_alias = self._confirmed_price_alias(item) or self._confirmed_review_alias(item)
+        confirmed_alias = None
+        for alias_master in (
+            self._confirmed_price_alias(item),
+            self._confirmed_review_alias(item),
+        ):
+            if alias_master is not None and self._alias_type_allowed(item, alias_master):
+                confirmed_alias = alias_master
+                break
 
         if confirmed_alias is not None:
             master = confirmed_alias

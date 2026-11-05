@@ -209,3 +209,201 @@ def test_run_sales_preserves_source_name_for_review_rows(tmp_path: Path):
     assert ws.cell(row=2, column=match_master_col).value in (None, "")
     assert ws.cell(row=2, column=match_conf_col).value in (None, "")
     assert ws.cell(row=2, column=match_reasons_col).value == "MULTIPLE_MATCH"
+
+
+
+def test_run_sales_preserves_shipped_qty_and_sku_header_with_merged_source_header(tmp_path: Path):
+    master_file = _create_master_workbook(tmp_path / "MASTER.xlsx")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "SALES"
+    ws.append([None, None, None, None, None, None, None, None])
+    ws.merge_cells("A2:B2")
+    ws["A2"] = "Наименование"
+    ws["C2"] = "Остаток"
+    ws["D2"] = "Воронеж"
+    ws["G2"] = "Краснодар 1"
+    ws["H2"] = "Краснодар 2"
+    ws.append([1, "SVO SHAMPUN AQUA 1 л", 100, 5, None, None, 3, 2])
+    sales_file = tmp_path / "SALES_2026-07-15.xlsx"
+    wb.save(sales_file)
+
+    output_file = tmp_path / "SALES_MATCH_15.07.2026.xlsx"
+    result = Engine().run_sales(
+        master_file=master_file,
+        sales_file=sales_file,
+        output_file=output_file,
+    )
+
+    assert result["match"] == 1
+    wb = load_workbook(output_file, data_only=True)
+    ws = wb.active
+    headers = [str(value or "").strip().upper() for value in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
+
+    assert headers[0] == "№"
+    assert headers[1] == "SKU"
+    assert headers[2] == "НАИМЕНОВАНИЕ"
+    assert ws.cell(row=2, column=2).value == "SKU-1"
+    assert ws.cell(row=2, column=3).value == "Шампунь SVO AQUA 1 л"
+    shipped_col = headers.index("ОТГРУЖЕНО") + 1
+    assert ws.cell(row=2, column=shipped_col).value == 10
+
+
+
+def _write_master_rows(path: Path, rows: list[tuple[str, str, str, str, str, str]]) -> Path:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "MASTER"
+    ws.append(["SKU", "Category", "Brand", "Variant", "Volume", "MASTER_NAME"])
+    for row in rows:
+        ws.append(list(row))
+    wb.save(path)
+    return path
+
+
+def _write_simple_sales(path: Path, product_name: str) -> Path:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "SALES"
+    ws.append(["Наименование", "SKU", "Тип товара", "Бренд", "Variant", "Объем"])
+    ws.append([product_name, None, None, None, None, None])
+    wb.save(path)
+    return path
+
+
+@pytest.mark.parametrize(
+    ("size", "rose_sku", "papatye_sku"),
+    [
+        ("1,3", "SKU-160", "SKU-164"),
+        ("2,7", "SKU-182", "SKU-186"),
+        ("4", "SKU-204", "SKU-208"),
+        ("6", "SKU-215", "SKU-219"),
+        ("9", "SKU-226", "SKU-230"),
+    ],
+)
+def test_sales_romashka_maps_to_papatye_not_rose(tmp_path: Path, size: str, rose_sku: str, papatye_sku: str):
+    master_file = _write_master_rows(
+        tmp_path / "MASTER.xlsx",
+        [
+            (rose_sku, "Порошок стиральный", "SVO", "Rose", f"{size} кг", f"Порошок стиральный SVO Rose {size} кг"),
+            (papatye_sku, "Порошок стиральный", "SVO", "Papatye", f"{size} кг", f"Порошок стиральный SVO Papatye {size} кг"),
+        ],
+    )
+    sales_file = _write_simple_sales(
+        tmp_path / "SALES.xlsx",
+        f"Порошок стиральный SVO {size} кг Ромашка",
+    )
+    result = Engine().run_sales(
+        master_file=master_file,
+        sales_file=sales_file,
+        output_file=tmp_path / "SALES_MATCH.xlsx",
+    )
+    assert result["match"] == 1
+    assert result["items"][0].sku == papatye_sku
+
+
+def test_sales_baby_15l_maps_to_svo_baby_sku093_not_black(tmp_path: Path):
+    master_file = _write_master_rows(
+        tmp_path / "MASTER.xlsx",
+        [
+            ("SKU-091", "ЖМС", "SVO", "Black", "1,5 л", "ЖМС SVO Elegant Black 1,5 л"),
+            ("SKU-093", "ЖМС", "SVO", "Baby", "1,5 л", "ЖМС SVO Baby 1,5 л"),
+        ],
+    )
+    sales_file = _write_simple_sales(
+        tmp_path / "SALES.xlsx",
+        "ЖМС SVO Elegant 1,5 л Baby",
+    )
+    result = Engine().run_sales(
+        master_file=master_file,
+        sales_file=sales_file,
+        output_file=tmp_path / "SALES_MATCH.xlsx",
+    )
+    assert result["match"] == 1
+    assert result["items"][0].sku == "SKU-093"
+
+
+def test_sales_persil_15l_is_out_of_scope_not_velvet(tmp_path: Path):
+    master_file = _write_master_rows(
+        tmp_path / "MASTER.xlsx",
+        [
+            ("SKU-089", "ЖМС", "SVO", "Velvet", "1,5 л", "ЖМС SVO Elegant Velvet 1,5 л"),
+        ],
+    )
+    sales_file = _write_simple_sales(
+        tmp_path / "SALES.xlsx",
+        "ЖМС SVO Elegant 1,5 л PERSIL",
+    )
+    result = Engine().run_sales(
+        master_file=master_file,
+        sales_file=sales_file,
+        output_file=tmp_path / "SALES_MATCH.xlsx",
+    )
+    assert result["out_of_scope"] == 1
+    assert result["match"] == 0
+    assert result["items"][0].status == "OUT_OF_SCOPE"
+
+
+def test_sales_baby_powder_27_does_not_fall_back_to_black_when_sku292_missing(tmp_path: Path):
+    master_file = _write_master_rows(
+        tmp_path / "MASTER.xlsx",
+        [
+            ("SKU-189", "Порошок стиральный", "SVO", "Black", "2,7 кг", "Порошок стиральный SVO Black 2,7 кг"),
+        ],
+    )
+    sales_file = _write_simple_sales(
+        tmp_path / "SALES.xlsx",
+        "Порошок стиральный SVO 2,7 кг Baby",
+    )
+    result = Engine().run_sales(
+        master_file=master_file,
+        sales_file=sales_file,
+        output_file=tmp_path / "SALES_MATCH.xlsx",
+    )
+    assert result["match"] == 0
+    assert result["review"] == 1
+    assert result["items"][0].sku is None
+    assert "CONFIRMED_MASTER_SKU_MISSING" in result["items"][0].review_reasons
+
+
+
+def test_sales_bossfix_baby_15l_maps_to_sku092(tmp_path: Path):
+    master_file = _write_master_rows(
+        tmp_path / "MASTER.xlsx",
+        [
+            ("SKU-092", "ЖМС", "BOSSFIX", "Baby", "1,5 л", "ЖМС BOSSFIX Baby 1,5 л"),
+        ],
+    )
+    sales_file = _write_simple_sales(
+        tmp_path / "SALES.xlsx",
+        "ЖМС BOSSFIX Baby 1,5 л",
+    )
+    result = Engine().run_sales(
+        master_file=master_file,
+        sales_file=sales_file,
+        output_file=tmp_path / "SALES_MATCH.xlsx",
+    )
+    assert result["match"] == 1
+    assert result["items"][0].sku == "SKU-092"
+
+
+def test_sales_baby_powder_27_maps_to_sku292_when_present(tmp_path: Path):
+    master_file = _write_master_rows(
+        tmp_path / "MASTER.xlsx",
+        [
+            ("SKU-189", "Порошок стиральный", "SVO", "Black", "2,7 кг", "Порошок стиральный SVO Black 2,7 кг"),
+            ("SKU-292", "Порошок стиральный", "SVO", "Baby", "2,7 кг", "Порошок стиральный SVO Baby 2,7 кг"),
+        ],
+    )
+    sales_file = _write_simple_sales(
+        tmp_path / "SALES.xlsx",
+        "Порошок стиральный SVO 2,7 кг Baby",
+    )
+    result = Engine().run_sales(
+        master_file=master_file,
+        sales_file=sales_file,
+        output_file=tmp_path / "SALES_MATCH.xlsx",
+    )
+    assert result["match"] == 1
+    assert result["items"][0].sku == "SKU-292"

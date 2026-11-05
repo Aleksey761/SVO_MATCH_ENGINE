@@ -140,6 +140,22 @@ def test_normalizer_applies_confirmed_variant_and_color_canonicalization(source_
     assert normalized.aroma == expected_variant
 
 
+
+@pytest.mark.parametrize(
+    ('source_name', 'expected_variant'),
+    [
+        ('SVO ПОРОШ. СТИР. 10 КГ РОМАШКА', 'PAPATYE'),
+        ('SVO ПОРОШ. СТИР. 10 КГ ВЕСЕННИЙ БРИЗ', 'SPRING FRESH'),
+        ('SVO ПОРОШ. СТИР. 10 КГ АВТОМАТ ВЕСЕН БРИЗ', 'SPRING FRESH'),
+    ],
+)
+def test_normalizer_maps_confirmed_10kg_powder_aromas(source_name: str, expected_variant: str):
+    normalized = Normalizer().normalize(ArrivalItem(row_number=1, source_name=source_name))
+    assert normalized.brand == 'SVO'
+    assert normalized.volume == '10 КГ'
+    assert normalized.variant == expected_variant
+    assert normalized.aroma == expected_variant
+
 def test_price_loader_uses_cleaner_for_supplier_schema(tmp_path: Path):
     price_file = _write_supplier_price(
         tmp_path / "PRICE_SUPPLIER.xlsx",

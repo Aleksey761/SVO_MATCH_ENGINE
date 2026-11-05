@@ -120,38 +120,6 @@ class Reporter:
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
         wb.save(output_file)
 
-        # SALES: preserve calculated shipped quantity in the final workbook.
-        # SalesLoader calculates item.shipped_qty = D + G + H.
-        if items:
-            out_wb = load_workbook(output_file)
-            out_ws = out_wb.active
-
-            headers = [str(c.value or "").strip() for c in out_ws[1]]
-            shipped_col = None
-            for i, header in enumerate(headers, start=1):
-                if header.casefold() in ("?????????", "shipped_qty", "shipped"):
-                    shipped_col = i
-                    break
-
-            if shipped_col is None:
-                shipped_col = out_ws.max_column + 1
-                out_ws.cell(row=1, column=shipped_col, value="????????")
-
-            shipped_by_row = {
-                int(item.row_number): (getattr(item, "shipped_qty", 0) or 0)
-                for item in items
-                if getattr(item, "row_number", None) is not None
-            }
-
-            for excel_row, shipped_qty in shipped_by_row.items():
-                if excel_row <= out_ws.max_row:
-                    out_ws.cell(
-                        row=excel_row,
-                        column=shipped_col,
-                        value=shipped_qty,
-                    )
-
-            out_wb.save(output_file)
 
 
     def write_matched_arrival(
@@ -287,6 +255,18 @@ class Reporter:
         # The final canonical result must expose the actual business header in row 1.
         sklad1_col = header_to_col.get("СКЛАД 1")
         is_sales_result = sales_header_row is not None
+        if is_sales_result:
+            # Unmerge source header cells before deleting leading rows. Some
+            # SALES files merge A:B, and openpyxl can leave stale MergedCell
+            # placeholders after delete_rows(), blocking the canonical SKU header.
+            for merged_range in list(ws.merged_cells.ranges):
+                if (
+                    merged_range.min_row <= header_row <= merged_range.max_row
+                    and merged_range.min_col <= 7
+                    and merged_range.max_col >= 1
+                ):
+                    ws.unmerge_cells(str(merged_range))
+
         if is_sales_result and header_row > 1:
             leading_rows = header_row - 1
             if all(
@@ -312,6 +292,7 @@ class Reporter:
 
         if is_sales_result:
             canonical_headers = ("№", "SKU", "НАИМЕНОВАНИЕ", "ТИП ТОВАРА", "БРЕНД", "VARIANT", "ОБЪЕМ")
+
             for col, title in enumerate(canonical_headers, start=1):
                 self._set_cell_value(ws, header_row, col, title)
 

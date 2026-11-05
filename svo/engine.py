@@ -96,6 +96,80 @@ class Engine:
         return exact_count
 
     @staticmethod
+    def _apply_confirmed_sales_mappings(items: list, master_items: list) -> int:
+        """Apply narrowly confirmed SALES mappings where source metadata conflicts with the canonical MASTER."""
+        master_by_sku = Engine._master_by_sku(master_items)
+
+        applied = 0
+        for item in items:
+            source = Engine._normalize_business_name(getattr(item, "source_name", ""))
+            match_name = Engine._normalize_business_name(getattr(item, "match_name", ""))
+            sku = None
+
+            # Explicit source-name mapping confirmed by the canonical MASTER.
+            if source == Engine._normalize_business_name(
+                "Моющее средство для мытья пола SVO 2,5 л (Розовый)"
+            ):
+                sku = "SKU-140"
+
+            # Confirmed baby powder position: keep it separate from Black.
+            elif (
+                "ПОРОШОК СТИРАЛЬНЫЙ" in (source + " " + match_name)
+                and re.search(r"2[,.]7\s*КГ", source + " " + match_name)
+                and "BABY" in (source + " " + match_name)
+            ):
+                sku = "SKU-292"
+
+            # Confirmed 1.5 L baby liquid detergents are separate MASTER SKUs.
+            elif (
+                "ЖМС" in (source + " " + match_name)
+                and re.search(r"1[,.]5\s*Л", source + " " + match_name)
+                and "BABY" in (source + " " + match_name)
+            ):
+                sku = "SKU-092" if "BOSSFIX" in (source + " " + match_name) else "SKU-093"
+
+            if not sku:
+                continue
+
+            master_item = master_by_sku.get(sku)
+            if master_item is None:
+                # Never let a missing confirmed MASTER position fall through
+                # to a nearby variant such as Black. Keep it in REVIEW.
+                item.sku = None
+                item.master_name = ""
+                item.status = "REVIEW"
+                item.confidence = 0.0
+                item.review_reasons = ["CONFIRMED_MASTER_SKU_MISSING"]
+                item.candidates = []
+                item.review_explanation = {
+                    "confidence": 0.0,
+                    "reasons": ["CONFIRMED_MASTER_SKU_MISSING"],
+                    "candidates": [],
+                    "source": "CONFIRMED_SALES_MAPPING_MASTER_MISSING",
+                }
+                applied += 1
+                continue
+
+            item.sku = master_item.sku
+            item.master_name = master_item.master_name or (
+                f"{master_item.category} {master_item.brand} "
+                f"{master_item.variant} {master_item.volume}".strip()
+            )
+            item.status = "MATCH"
+            item.confidence = 100.0
+            item.review_reasons = []
+            item.candidates = []
+            item.review_explanation = {
+                "confidence": 100.0,
+                "reasons": [],
+                "candidates": [],
+                "source": "CONFIRMED_SALES_MAPPING",
+            }
+            applied += 1
+
+        return applied
+
+    @staticmethod
     def _apply_sales_out_of_scope(items: list) -> int:
         expected_sources = {
             72: "КОФЕ КАПУЧИНО",
@@ -116,7 +190,14 @@ class Engine:
         out_of_scope_count = 0
         for item in items:
             source = " ".join(str(getattr(item, "source_name", "") or "").strip().upper().split())
-            if expected_sources.get(getattr(item, "row_number", None)) != source:
+            is_persil_out_of_scope = (
+                "ЖМС" in source
+                and "SVO" in source
+                and "ELEGANT" in source
+                and "PERSIL" in source
+                and re.search(r"1[,.]5\s*Л", source) is not None
+            )
+            if expected_sources.get(getattr(item, "row_number", None)) != source and not is_persil_out_of_scope:
                 continue
 
             item.status = "OUT_OF_SCOPE"
@@ -145,6 +226,66 @@ class Engine:
                 change_reason=str(getattr(item, "name_correction_reason", "") or "").strip(),
                 status=str(getattr(item, "status", "") or "").strip().upper(),
             )
+
+    @staticmethod
+    def _normalize_business_name(value: object) -> str:
+        return " ".join(str(value or "").strip().upper().split())
+
+    def _apply_confirmed_price_mappings(self, items: list, master_items: list) -> int:
+        """Apply explicitly confirmed business mappings before generic PRICE matching."""
+        master_by_sku = self._master_by_sku(master_items)
+        mappings = {
+            self._normalize_business_name(
+                "SVO кондиц. д/белья 2,700 мл РОМАНТИЧЕСКИЕ ЦВЕТЫ / 6"
+            ): "SKU-060",
+            self._normalize_business_name(
+                "SVO порош. стир. 4 кг РОМАШКА Daisy для цв. и бел / 4"
+            ): "SKU-208",
+            self._normalize_business_name(
+                "SVO порош. стир. 6 кг РОМАШКА для белых"
+            ): "SKU-223",
+            self._normalize_business_name(
+                "SVO порош. стир. 9 кг РОМАШКА для цв. и бел 100/1"
+            ): "SKU-230",
+        }
+
+        applied = 0
+        for item in items:
+            names_to_try = (
+                getattr(item, "source_name", ""),
+                getattr(item, "original_product_name", ""),
+                getattr(item, "source_name_before_correction", ""),
+            )
+            sku = None
+            for candidate_name in names_to_try:
+                sku = mappings.get(self._normalize_business_name(candidate_name))
+                if sku:
+                    break
+            if not sku:
+                continue
+
+            master_item = master_by_sku.get(sku)
+            if master_item is None:
+                continue
+
+            item.sku = master_item.sku
+            item.master_name = master_item.master_name or (
+                f"{master_item.category} {master_item.brand} "
+                f"{master_item.variant} {master_item.volume}".strip()
+            )
+            item.status = "MATCH"
+            item.confidence = 100.0
+            item.review_reasons = []
+            item.candidates = []
+            item.review_explanation = {
+                "confidence": 100.0,
+                "reasons": [],
+                "candidates": [],
+                "source": "CONFIRMED_PRICE_MAPPING",
+            }
+            applied += 1
+
+        return applied
 
     def _apply_learning_map_matches(self, items: list, master_items: list) -> tuple[list, int, int]:
         master_by_sku = self._master_by_sku(master_items)
@@ -585,9 +726,17 @@ class Engine:
 
         if document_name == "REVISION":
             self.revision_name_canonicalizer.apply_all(document_items)
+        elif document_name == "SALES":
+            self._apply_confirmed_sales_mappings(document_items, master)
 
         matcher = Matcher(master)
-        unresolved_seed = [item for item in document_items if str(getattr(item, "status", "") or "").upper() != "MATCH"]
+        unresolved_seed = [
+            item
+            for item in document_items
+            if str(getattr(item, "status", "") or "").upper() != "MATCH"
+            and "CONFIRMED_MASTER_SKU_MISSING"
+            not in (getattr(item, "review_reasons", []) or [])
+        ]
         unresolved_items, learning_reused, learning_stale = self._apply_learning_map_matches(unresolved_seed, master)
         matcher.match_all(unresolved_items)
         BusinessRules(master).apply(document_items)
@@ -612,8 +761,10 @@ class Engine:
                 master_file=master_file,
             )
 
-            if not Path(matched_output_file).name.upper().startswith("RESULT"):
-                self._restore_sales_technical_columns(matched_output_file, review_count)
+            # finalize_result_by_master() preserves MATCH_* fields while moving
+            # complete row values. The legacy restoration heuristic reads row 1
+            # only and can append duplicate technical columns when the source
+            # header is below a title/blank row.
         review_report_file = Path(output_file).parent / "REVIEW_REPORT.xlsx"
         review_report_rows = reporter.write_review_report(document_items, review_report_file)
 
@@ -655,6 +806,8 @@ class Engine:
         self._apply_exact_after_correction(price_items, source="PRICE", correction_layer=correction_layer)
         for item in price_items:
             self.normalizer.normalize(item)
+
+        confirmed_price_mappings = self._apply_confirmed_price_mappings(price_items, master)
 
         print("Matching...")
         matcher = Matcher(master, auto_resolve_multiple_candidates=True, auto_match_score_delta=8.0)
@@ -735,6 +888,7 @@ class Engine:
             "price_match_output": match_report_path,
             "price_change_report": change_report_path,
             "price_review_report": review_report_path,
+            "confirmed_price_mappings": confirmed_price_mappings,
             "learning_reused": learning_reused,
             "learning_stale": learning_stale,
         }

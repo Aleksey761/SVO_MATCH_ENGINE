@@ -27,7 +27,7 @@ def _looks_like_product_name(value: object) -> bool:
 class SalesLoader(ArrivalLoader):
     """Loads SALES workbook rows into the shared arrival item model."""
 
-    def _find_quantity_column_indices(self, worksheet) -> tuple[int, int, int]:
+    def _find_quantity_column_indices(self, worksheet) -> tuple[int, ...]:
         required_headers = ("ВОРОНЕЖ", "КРАСНОДАР 1", "КРАСНОДАР 2")
         found: dict[str, int] = {}
 
@@ -38,6 +38,13 @@ class SalesLoader(ArrivalLoader):
                     found[header] = column_index
             if all(header in found for header in required_headers):
                 return tuple(found[header] for header in required_headers)
+
+        # Alternative order-layout contract: a single "ШТ" quantity column
+        # (e.g. № | название | шт | цена | сумма | кор).
+        for row_idx in range(1, min(worksheet.max_row, 12) + 1):
+            for column_index, cell in enumerate(worksheet[row_idx]):
+                if _normalize_header(cell.value) == "ШТ":
+                    return (column_index,)
 
         # A SALES workbook may legitimately contain only product names
         # (for example, a review-only source). In that case quantities are
@@ -147,10 +154,7 @@ class SalesLoader(ArrivalLoader):
                                 min(worksheet.max_row, explicit_header_row + 10) + 1,
                             )
                         ]
-                        if sum(
-                            1 for value in next_values
-                            if _looks_like_product_name(value)
-                        ) >= 2:
+                        if any(_looks_like_product_name(value) for value in next_values):
                             candidate += 1
 
                     name_column_index = candidate
