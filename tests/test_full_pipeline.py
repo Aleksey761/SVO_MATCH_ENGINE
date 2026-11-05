@@ -73,10 +73,10 @@ def test_full_pipeline_generates_outputs_summary_and_errors(tmp_path: Path, monk
     output_dir = tmp_path / "output"
     expected_files = [
         output_dir / "MASTER_MATCH.xlsx",
-        output_dir / "PRICE_MATCH.xlsx",
+        output_dir / "price_match.xlsx",
         output_dir / "PRICE_HISTORY.xlsx",
-        output_dir / "PRICE_CHANGE_REPORT.xlsx",
-        output_dir / "PRICE_REVIEW.xlsx",
+        output_dir / "price_change_report.xlsx",
+        output_dir / "price_review.xlsx",
         output_dir / "SALES_MATCH.xlsx",
         output_dir / "STOCK_MATCH.xlsx",
         output_dir / "FINAL_REPORT.xlsx",
